@@ -1,0 +1,123 @@
+{% extends 'base.html' %}{% block content %}
+<section class="wael-hero premium-hero">
+  <div class="wael-hero-copy">
+    <span class="wael-brandline">EL-MOSTASHAR IN ENGLISH • 2026/2027</span>
+    <h1>من التشتت إلى <span>الإتقان في English</span></h1>
+    <p class="wael-lead">مع مستر رجب صديق، الإنجليزي مش حفظ كلمات وقواعد وخلاص. هتفهم الفكرة من أساسها، تتدرّب عليها، تختبر نفسك، وتعرف مستواك خطوة بخطوة.</p>
+    <div class="wael-stage-pill">للصف الأول والثاني والثالث الثانوي</div>
+    <div class="hero-proof-row"><span>✓ شرح منظم</span><span>✓ اختبارات تفاعلية</span><span>✓ متابعة تقدم</span></div>
+    <div class="wael-hero-actions">
+      {% if user %}<a class="ww-solid-btn large" href="/dashboard">ادخل إلى لوحتك</a>{% else %}<a class="ww-solid-btn large" href="/register">ابدأ من مستواك</a>{% endif %}
+      <a class="ww-outline-btn large hero-wa" href="https://wa.me/201060309494" target="_blank" rel="noopener">اسأل على واتساب</a>
+    </div>
+    <div class="hero-mini-stats"><div><strong>4</strong><span>مسارات دراسية</span></div><div><strong>24/7</strong><span>تعلم في أي وقت</span></div><div><strong>A+</strong><span>هدفنا الإتقان</span></div></div>
+  </div>
+  <div class="wael-hero-art premium-teacher-art">
+    <div class="wael-symbols"><span>A</span><span>+</span><span>EN</span><span>✓</span></div>
+    <div class="teacher-glow"></div>
+    <picture><source srcset="/static/branding/ragab-seddik-hero-2026.webp" type="image/webp"><img src="/static/branding/ragab-seddik-hero-2026-fallback.jpg" alt="مستر رجب صديق - خبير تدريس اللغة الإنجليزية" width="1280" height="1280" decoding="async" fetchpriority="high"></picture>
+    <div class="wael-teacher-label"><strong>Mr / Ragab Seddik</strong><span>English Language Expert</span></div>
+  </div>
+</section>
+
+<section class="wael-section" id="grades">
+  <div class="wael-section-heading">
+    <div><span class="wael-section-kicker">ابدأ من مستواك</span><h2>اختار صفك الدراسي</h2></div>
+    <p>3 مسارات واضحة للمرحلة الثانوية، وكل مسار يجمع الشرح والتدريب والاختبارات والمتابعة.</p>
+  </div>
+  <div class="wael-grade-grid">
+    <a class="wael-grade-card" href="#courses"><span class="wael-grade-index">01</span><small>المرحلة الثانوية</small><h3>الصف الأول الثانوي</h3><p>تأسيس قوي في Grammar وVocabulary وReading وWriting مع تدريبات بعد كل درس.</p><b>شوف الكورسات ←</b></a>
+    <a class="wael-grade-card featured" href="#courses"><span class="wael-grade-index">02</span><small>المرحلة الثانوية</small><h3>الصف الثاني الثانوي عام</h3><p>تطوير المستوى وربط القواعد بالمواقف والأسئلة، واختبارات متدرجة لمتابعة التحسن.</p><b>شوف الكورسات ←</b></a>
+    <a class="wael-grade-card" href="#courses"><span class="wael-grade-index">03</span><small>نظام البكالوريا</small><h3>الصف الثاني بكالوريا</h3><p>تطوير المستوى وربط القواعد بالمواقف والأسئلة، واختبارات متدرجة لمتابعة التحسن.</p><b>شوف الكورسات ←</b></a>
+    <a class="wael-grade-card" href="#courses"><span class="wael-grade-index">04</span><small>المرحلة الثانوية</small><h3>الصف الثالث الثانوي</h3><p>تدريب مكثف على أفكار الامتحان، مراجعات ذكية، وقياس مستوى مستمر حتى الإتقان.</p><b>شوف الكورسات ←</b></a>
+  </div>
+</section>
+
+<section class="wael-section premium-courses" id="courses">
+  <div class="wael-section-heading">
+    <div><span class="wael-section-kicker">المحتوى الدراسي</span><h2>الكورسات المتاحة</h2></div>
+    <p>اختر الكورس المناسب لصفك، شاهد المحتوى، حل الاختبارات، وكمّل من حيث توقفت.</p>
+  </div>
+  <div class="wael-course-grid">
+    {% for c in courses %}
+    <article class="wael-course-card">
+      <div class="wael-course-cover premium-course-cover">
+        <img src="/static/branding/ragab-seddik-course-card.webp" alt="{{c.title}} - مستر رجب صديق" width="640" height="640" loading="lazy" decoding="async">
+        <span class="wael-course-grade">{{c.grade}}</span>
+        <span class="wael-course-state {{'live' if c.published else ''}}">{{'متاح الآن' if c.published else 'قريبًا'}}</span>
+      </div>
+      <div class="wael-course-body">
+        <div class="wael-course-meta"><span>Mr-Ragab</span><span>English</span></div>
+        <h3>{{c.title}}</h3>
+        <p>{{c.description or 'شرح مبسط، كلمات وقواعد وتدريبات متنوعة واختبارات تساعدك تفهم أسرع وتحل بثقة.'}}</p>
+        <div class="course-benefits"><span>فيديوهات</span><span>اختبارات</span><span>متابعة</span></div>
+        <div class="wael-course-bottom">
+          <strong>{{'مجاني' if c.price == 0 else ('%.0f'|format(c.price)) ~ ' ج.م'}}</strong>
+          {% if user and user.role == 'student' %}<a href="/checkout/{{c.id}}">عرض المحتوى</a>{% elif user %}<a href="/course/{{c.id}}">عرض المحتوى</a>{% else %}<a href="/login">عرض المحتوى</a>{% endif %}
+        </div>
+      </div>
+    </article>
+    {% else %}<div class="empty">لا توجد كورسات منشورة بعد.</div>{% endfor %}
+  </div>
+</section>
+
+{% if reels_enabled and reels %}<section class="wael-section homepage-reels" id="reels"><div class="wael-section-heading"><div><span class="wael-section-kicker">ريلز المستشار</span><h2>لقطات سريعة ومفيدة</h2></div><p>مختارات قصيرة من المحتوى الرسمي، تُفتح عند الطلب حتى تظل الصفحة خفيفة وسريعة.</p></div><div class="reels-grid">{% for x in reels %}<a class="reel-card" href="{{x.url}}" target="_blank" rel="noopener noreferrer"><span class="reel-play">▶</span><small>REEL</small><h3>{{x.title}}</h3>{% if x.caption %}<p>{{x.caption}}</p>{% endif %}<b>شاهد الآن ↗</b></a>{% endfor %}</div></section>{% endif %}
+{% if honors_enabled and honors %}<section class="wael-section homepage-honors" id="honor-roll"><div class="wael-section-heading"><div><span class="wael-section-kicker">لوحة الشرف</span><h2>أوائل طلاب المستشار</h2></div><p>نحتفل بالاجتهاد والتميز، ويمكن للإدارة إظهار القائمة أو إخفاؤها في أي وقت.</p></div><div class="honor-grid">{% for x in honors %}<article class="honor-card"><span class="honor-rank">{{x.rank_label or loop.index}}</span><div><h3>{{x.student_name}}</h3><p>{{x.grade}}{% if x.score_text %} • <b>{{x.score_text}}</b>{% endif %}</p>{% if x.note %}<small>{{x.note}}</small>{% endif %}</div></article>{% endfor %}</div></section>{% endif %}
+<section class="wael-section ai-showcase" id="smart-assistant">
+  <div class="ai-showcase-copy">
+    <span class="wael-section-kicker">مساعد المستشار الذكي</span>
+    <h2>مش مجرد فيديو تتفرج عليه — اسأل الدرس نفسه</h2>
+    <p>داخل الدرس تقدر تسأل عن نقطة مش واضحة، تراجع أهم الأفكار بالـFlash Cards، وتحل أسئلة تفاعلية مرتبطة بأجزاء الشرح. المساعد مصمم ليعتمد على محتوى الدرس نفسه بدل الإجابات العامة.</p>
+    <div class="ai-feature-chips"><span>شرح النقاط الصعبة</span><span>مراجعة سريعة</span><span>أسئلة أثناء الفيديو</span><span>انتقال مباشر للواجب</span></div>
+    {% if user %}<a class="ww-solid-btn" href="/dashboard">افتح لوحة التعلم</a>{% else %}<a class="ww-solid-btn" href="/register">ابدأ واستخدم المساعد</a>{% endif %}
+  </div>
+  <div class="ai-showcase-card">
+    <div class="ai-bubble student">ممكن تشرحلي النقطة دي بطريقة أبسط؟</div>
+    <div class="ai-bubble assistant"><b>مساعد المستشار</b><span>هشرحها لك من نفس محتوى الدرس، وبعدها أقدر أوجّهك للسؤال أو الجزء المرتبط بها.</span></div>
+    <div class="ai-mini-actions"><span>🧠 اسأل</span><span>🗂 راجع</span><span>🧪 اختبر نفسك</span></div>
+  </div>
+</section>
+
+<section class="wael-journey">
+  <div class="wael-journey-heading"><span>خليك معانا في رحلة English</span><h2>نظام تعلم كامل يخليك فاهم، متدرب، وعارف مستواك</h2></div>
+  <div class="wael-journey-grid">
+    <article><span>01</span><h3>شرح واضح</h3><p>كل فكرة تتشرح ببساطة وبترتيب يخليك فاهم قبل ما تبدأ الحل.</p></article>
+    <article><span>02</span><h3>تدريب فعلي</h3><p>أسئلة وتطبيقات بعد كل جزء عشان المعلومة تثبت وتعرف مستواك.</p></article>
+    <article><span>03</span><h3>فهم مش حفظ</h3><p>نربط القواعد والكلمات بالاستخدام الحقيقي بدل الحفظ المؤقت.</p></article>
+    <article><span>04</span><h3>حل بثقة</h3><p>تدريب متدرج من الأساسيات لأفكار الامتحان عشان تدخل وأنت جاهز.</p></article>
+  </div>
+</section>
+
+<section class="wael-why" id="why">
+  <div class="wael-why-intro">
+    <span class="wael-section-kicker">نظام كامل مش فيديوهات بس</span>
+    <h2>ليه English مع Mr / Ragab Seddik؟</h2>
+    <p>منصة تتابع الطالب من أول الشرح لحد الاختبار والتقرير، وتخلّيه عارف دائمًا الخطوة اللي بعدها.</p>
+  </div>
+  <div class="wael-why-grid">
+    <article><div class="wael-feature-icon">✓</div><small>تطبيق مباشر</small><h3>امتحان بعد كل درس</h3><p>أسئلة تفاعلية وتصحيح فوري يوضح الدرجة ونقاط القوة والضعف.</p></article>
+    <article><div class="wael-feature-icon">↗</div><small>متابعة شفافة</small><h3>تقرير لولي الأمر</h3><p>متابعة للمشاهدات والدرجات والتقدم بصورة واضحة ومنظمة.</p></article>
+    <article><div class="wael-feature-icon">AI</div><small>مذاكرة أذكى</small><h3>مساعد المستشار</h3><p>Flash Cards ومساعد مذاكرة مرتبط بمحتوى الدرس والواجب لمراجعة أسرع.</p></article>
+    <article><div class="wael-feature-icon">▶</div><small>تعلم تفاعلي</small><h3>أسئلة داخل الفيديو</h3><p>نقاط توقف واختبارات قصيرة أثناء الشرح مع تغذية راجعة فورية.</p></article>
+  </div>
+</section>
+
+<section class="whatsapp-support-section">
+  <div class="wa-support-copy"><span>محتاج مساعدة؟</span><h2>تواصل مباشرة مع منصة المستشار على واتساب</h2><p>للاستفسار عن الاشتراكات والكورسات والحسابات والدعم الفني.</p></div>
+  <a href="https://wa.me/201060309494" target="_blank" rel="noopener"><span>WA</span><b>01060309494</b><small>فتح المحادثة الآن</small></a>
+</section>
+
+<section class="wael-cta">
+  <div><span>ابدأ من مستواك، مش من الأول</span><h2>حدد صفك، شوف الخطة، وابدأ رحلتك مع المستشار</h2></div>
+  <div class="wael-cta-actions">{% if user %}<a class="ww-solid-btn large" href="/dashboard">اذهب إلى لوحتك</a>{% else %}<a class="ww-solid-btn large" href="/register">إنشاء حساب</a><a class="ww-outline-btn light" href="/login">تسجيل الدخول</a>{% endif %}</div>
+</section>
+<section class="grade-community" id="community">
+  <div class="section-head"><span>مجتمع المستشار</span><h2>انضم إلى مجموعتك الرسمية</h2><p>اختر صفك الدراسي للانضمام إلى جروب واتساب الرسمي.</p></div>
+  <div class="grade-community-grid">
+    <a href="https://chat.whatsapp.com/F49VBaXN1wyCQQZJcslJZd" target="_blank" rel="noopener noreferrer"><b>الصف الأول الثانوي</b><span>انضم للجروب</span></a>
+    <a href="https://chat.whatsapp.com/EZEx43i9aTMCbEq488TCUe" target="_blank" rel="noopener noreferrer"><b>الصف الثاني الثانوي عام</b><span>انضم للجروب</span></a>
+    <a href="https://chat.whatsapp.com/F8hQk4TyvA3JzgCdhQGOE7" target="_blank" rel="noopener noreferrer"><b>الصف الثالث الثانوي</b><span>انضم للجروب</span></a>
+  </div>
+</section>
+<a class="home-ai-fab" href="{% if user and user.role == 'student' %}/smart-tutor{% elif user %}/dashboard{% else %}/register{% endif %}" aria-label="فتح مساعد المستشار الذكي"><span>🧠</span><b>المساعد الذكي</b></a>
+{% endblock %}

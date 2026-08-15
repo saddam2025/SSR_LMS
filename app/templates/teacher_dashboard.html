@@ -1,0 +1,34 @@
+{% extends 'admin_base.html' %}
+{% block title %}استوديو المدرس | المستشار{% endblock %}
+{% block page_label %}استوديو المدرس{% endblock %}
+{% block admin_content %}
+<div class="admin-page-head teacher-head"><div><span>TEACHER CONTENT STUDIO</span><h1>استوديو مستر رجب صديق</h1><p>مكان واحد لإدارة الدروس والفيديوهات والاختبارات والواجبات والمحتوى التفاعلي بدون التنقل بين صفحات كثيرة.</p></div><div class="inline-actions"><a class="btn ghost" href="/">معاينة المنصة</a><a class="btn" href="/admin/courses">+ إنشاء أو إدارة كورس</a></div></div>
+
+<div class="teacher-studio-kpis">
+  <article><span>الكورسات</span><strong>{{stats.published_courses}} / {{stats.courses}}</strong><small>منشور من إجمالي الكورسات</small></article>
+  <article><span>الدروس</span><strong>{{stats.published_lessons}} / {{stats.lessons}}</strong><small>درس منشور</small></article>
+  <article><span>الاختبارات</span><strong>{{stats.published_quizzes}} / {{stats.quizzes}}</strong><small>اختبار منشور</small></article>
+  <article><span>المكتبة</span><strong>{{stats.assets}}</strong><small>ملف محمي مرفوع</small></article>
+  <article class="attention"><span>تصحيح مطلوب</span><strong>{{stats.pending_homework}}</strong><small>تسليم واجب ينتظر التصحيح</small><a class="admin-text-link" href="/teacher/assessment">فتح مركز التقييم ←</a></article>
+</div>
+
+<section class="teacher-launchpad admin-panel"><div class="admin-panel-head"><div><small>FAST PUBLISH</small><h2>ابدأ من هنا</h2></div></div><div class="teacher-launch-grid">
+  <a href="/teacher/content"><span>01</span><div><b>مركز المحتوى والوحدات</b><small>نظم الصفوف والكورسات والوحدات والدروس من مكان واحد.</small></div></a>
+  <a href="/admin/courses"><span>02</span><div><b>رفع فيديو أو PDF</b><small>افتح الكورس المطلوب ثم استخدم المكتبة المحمية.</small></div></a>
+  <a href="/admin/courses"><span>03</span><div><b>إنشاء اختبار</b><small>اختبار بوقت ومحاولات وبنك أسئلة MCQ.</small></div></a>
+  <a href="/teacher/assessment"><span>04</span><div><b>واجب وتصحيح</b><small>افتح مركز التقييم لمراجعة التسليمات والدرجات والتأخير.</small></div></a>
+  <a href="/teacher/revision"><span>05</span><div><b>المراجعات النهائية</b><small>ابنِ خطة أيام ومهام قبل الامتحان وتابع إنجاز الطلاب.</small></div></a>
+</div></section>
+
+<div class="admin-dashboard-grid">
+<section class="admin-panel"><div class="admin-panel-head"><div><small>YOUR COURSES</small><h2>الكورسات والعمل الجاري</h2></div><a class="admin-text-link" href="/admin/courses">إدارة الكل ←</a></div>
+<div class="teacher-course-list">{% for c in courses %}<a href="/admin/course/{{c.id}}"><div><b>{{c.title}}</b><small>{{c.grade}} • {{c.lessons|length}} درس</small></div><span class="badge {{'success' if c.published else 'warn'}}">{{'منشور' if c.published else 'مسودة'}}</span></a>{% else %}<div class="empty">لا توجد كورسات بعد.</div>{% endfor %}</div></section>
+<aside class="admin-panel"><div class="admin-panel-head"><div><small>CONTENT HEALTH</small><h2>جاهزية النشر</h2></div></div><div class="teacher-readiness">
+  <div><b>قبل نشر أي درس</b><small>عنوان واضح + شرح + فيديو/مادة + اختبار أو تدريب.</small></div>
+  <div><b>الفيديو الإنتاجي</b><small>استخدم مزود Streaming/DRM المعتمد بدل إتاحة الفيديو الخام.</small></div>
+  <div><b>المحتوى المحمي</b><small>PDF والصور تمر عبر التحقق والعلامة المائية.</small></div>
+</div></aside>
+</div>
+
+<section class="admin-panel"><div class="admin-panel-head"><div><small>RECENT CONTENT</small><h2>آخر محتوى تم إنشاؤه</h2></div></div><div class="teacher-recent-grid"><div><h3>الدروس</h3>{% for l in recent_lessons %}<a href="/admin/course/{{l.course_id}}"><b>{{l.title}}</b><small>{{'منشور' if l.published else 'مسودة'}}</small></a>{% else %}<div class="empty">لا توجد دروس.</div>{% endfor %}</div><div><h3>الاختبارات</h3>{% for q in recent_quizzes %}<a href="/admin/quiz/{{q.id}}"><b>{{q.title}}</b><small>{{q.time_limit_minutes}} دقيقة • {{'منشور' if q.published else 'مسودة'}}</small></a>{% else %}<div class="empty">لا توجد اختبارات.</div>{% endfor %}</div></div></section>
+{% endblock %}

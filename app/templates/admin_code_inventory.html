@@ -1,0 +1,22 @@
+{% extends 'admin_base.html' %}
+{% block title %}مخزون أكواد الاشتراك | المستشار{% endblock %}
+{% block page_label %}مخزون أكواد الاشتراك{% endblock %}
+{% block admin_content %}
+<section class="admin-page-head"><div><span class="eyebrow">UI V21</span><h1>مخزون أكواد الاشتراك الجماعية</h1><p>أنشئ دفعات كبيرة من أكواد الكورسات، وزعها على السناتر أو الموزعين، وتابع المستخدم والمتاح والمنتهي من مكان واحد.</p></div><a class="btn ghost" href="/admin/commerce">المبيعات والاشتراكات</a></section>
+<div class="stats-grid">
+<div class="stat-card"><span>الدفعات</span><strong>{{totals.batches}}</strong><small>إجمالي الدفعات</small></div>
+<div class="stat-card"><span>إجمالي الأكواد</span><strong>{{totals.codes}}</strong><small>كل الأكواد المولدة</small></div>
+<div class="stat-card"><span>متاح</span><strong>{{totals.available}}</strong><small>جاهز للتوزيع أو الاستخدام</small></div>
+<div class="stat-card"><span>مستخدم</span><strong>{{totals.used}}</strong><small>{{totals.expired}} منتهي</small></div>
+</div>
+<div class="split">
+<div class="card"><h3>إنشاء دفعة جديدة</h3><form method="post" action="/admin/code-inventory/batches"><input type="hidden" name="csrf" value="{{csrf}}">
+<div class="field"><label>اسم الدفعة</label><input name="name" placeholder="سنتر النخبة - دفعة أغسطس" required></div>
+<div class="field"><label>الكورس</label><select name="course_id" required>{% for c in courses %}<option value="{{c.id}}">{{c.title}}</option>{% endfor %}</select></div>
+<div class="field"><label>عدد الأكواد</label><input name="quantity" type="number" min="1" max="5000" value="100" required><small class="muted">حتى 5000 كود في الدفعة الواحدة</small></div>
+<div class="field"><label>السنتر / الموزع</label><input name="distributor" placeholder="اسم السنتر أو الموزع"></div>
+<div class="field"><label>تاريخ الانتهاء</label><input name="expires_at" type="datetime-local"></div>
+<div class="field"><label>ملاحظات</label><textarea name="notes" rows="3"></textarea></div><button class="btn">توليد الدفعة</button></form></div>
+<div class="list">{% for x in batch_stats %}<div class="list-item"><div><b>{{x.batch.name}}</b><div class="muted">{{x.course.title if x.course else ('كورس #' ~ x.batch.course_id)}} · {{x.batch.distributor or 'بدون موزع'}}</div><small>{{x.available}} متاح · {{x.used}} مستخدم · {{x.expired}} منتهي · الإجمالي {{x.total}}</small></div><div class="inline-actions"><span class="badge {{'success' if x.batch.active else 'warn'}}">{{'نشطة' if x.batch.active else 'موقوفة'}}</span><a class="btn secondary" href="/admin/code-inventory/{{x.batch.id}}">فتح الدفعة</a></div></div>{% else %}<div class="empty">لا توجد دفعات أكواد بعد.</div>{% endfor %}</div>
+</div>
+{% endblock %}

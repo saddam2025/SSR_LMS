@@ -1,0 +1,19 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>الدرس | المستشار</title><link rel="stylesheet" href="../assets/style.css"><script src="../config.js"></script><script defer src="../assets/app.js"></script></head><body data-page="lesson">
+<header><a class="brand brand-link" href="./index.html">المستشار</a><div class="header-actions"><span id="student-name"></span><button id="logout">تسجيل الخروج</button></div></header>
+<main>
+<nav class="crumbs"><a href="./index.html">لوحة الطالب</a><span>←</span><a id="course-link" href="#">الكورس</a><span>←</span><span id="lesson-crumb">الدرس</span></nav>
+<section class="course-head"><span class="muted">درس محمي</span><h1 id="lesson-title">جارٍ تحميل الدرس...</h1><p id="status" class="muted">جاري الاتصال</p></section>
+<section id="protected-root" class="protected-shell" data-protected-content hidden>
+  <div id="watermark-grid" class="watermark-grid" aria-hidden="true"></div>
+  <div id="moving-watermark" class="moving-watermark" aria-hidden="true"></div>
+  <section id="player-card" class="lesson-card" hidden><div class="section-row"><h2>المشغل المحمي</h2><span id="player-status" class="lock-badge">Secure Session</span></div><div id="player-zone" class="player-zone"><div id="video-watermark" class="video-watermark" aria-hidden="true"></div></div><p class="muted">التشغيل مرتبط بالجلسة الحالية. رابط الفيديو الأصلي لا يتم إرساله للواجهة المنفصلة.</p></section>
+  <section class="lesson-card"><h2>شرح الدرس</h2><div id="lesson-body" class="lesson-body"></div></section>
+</section>
+<section id="checkpoints-section" class="lesson-card" hidden><h2>اختبر فهمك</h2><div id="checkpoints" class="stack"></div></section>
+<section id="flashcards-section" class="lesson-card" hidden><h2>Flash Cards</h2><div id="flashcards" class="cards-grid"></div></section>
+<section id="assistant-section" class="lesson-card"><h2>المساعد الذكي للدرس</h2><p class="muted">الإجابة تعتمد فقط على محتوى الدرس والواجبات والبطاقات المضافة داخل المنصة.</p><form id="assistant-form" class="interaction-form"><select id="assistant-mode"><option value="explain">شرح مبسط</option><option value="review">مراجعة مركزة</option><option value="practice">تدريب موجه</option><option value="homework">استعداد للواجب</option></select><textarea id="assistant-question" maxlength="1000" required placeholder="اكتب سؤالك عن الدرس"></textarea><button class="button-link" type="submit">اسأل المساعد</button></form><div id="assistant-answer" class="assistant-answer" hidden></div></section>
+<section id="discussion-section" class="lesson-card"><h2>مناقشة الدرس</h2><form id="discussion-form" class="interaction-form"><textarea id="discussion-body" maxlength="2000" required placeholder="اكتب مشاركتك أو سؤالك"></textarea><button class="button-link" type="submit">نشر المشاركة</button></form><div id="discussion" class="stack"></div></section>
+<section id="homework-section" class="lesson-card" hidden><h2>الواجب المرتبط</h2><div id="homeworks" class="stack"></div></section>
+<section id="assets-section" class="lesson-card" hidden><h2>ملفات الدرس</h2><div id="assets" class="cards-grid"></div></section>
+<div class="lesson-actions"><button id="complete-lesson" class="button-link" type="button">تم إكمال الدرس</button><a id="backend-fallback" class="button-link secondary-link" href="#">فتح النسخة الاحتياطية المحمية</a></div>
+</main></body></html>

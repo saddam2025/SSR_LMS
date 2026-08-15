@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel"><h1>الدعم الفني</h1><p>للمشكلات التقنية والحسابات والدفع والمحتوى. واتساب الرسمي: <a href="https://wa.me/201060309494">01060309494</a></p>
+<form method="post" action="/support/tickets" class="form-grid">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<label>الموضوع<input name="subject" maxlength="180" required></label>
+<label>النوع<select name="category"><option value="technical">مشكلة تقنية</option><option value="account">الحساب</option><option value="payment">الدفع والاشتراك</option><option value="content">المحتوى</option><option value="other">أخرى</option></select></label>
+<label>الأولوية<select name="priority"><option value="normal">عادية</option><option value="high">عالية</option><option value="low">منخفضة</option></select></label>
+<label class="full">التفاصيل<textarea name="message" maxlength="5000" required></textarea></label>
+<button type="submit">فتح تذكرة</button></form></section>
+<section class="panel"><h2>تذاكري</h2>
+{% for t in tickets %}<a class="ticket-row" href="/support/tickets/{{t.id}}"><b>#{{t.id}} — {{t.subject}}</b><span>{{t.status}} · {{t.priority}}</span></a>{% else %}<p>لا توجد تذاكر حتى الآن.</p>{% endfor %}
+</section>
+{% endblock %}

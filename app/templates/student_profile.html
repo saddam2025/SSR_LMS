@@ -1,0 +1,6 @@
+{% extends 'base.html' %}{% block title %}بياناتي | المستشار{% endblock %}{% block content %}
+<div class="page-head"><div><span class="eyebrow">STUDENT CRM</span><h1>بيانات الطالب</h1><p class="muted">تساعد هذه البيانات في المتابعة الأكاديمية والتواصل مع ولي الأمر.</p></div></div>
+<div class="card"><form method="post"><input type="hidden" name="csrf" value="{{csrf}}"><div class="grid">
+<div class="field"><label>رقم الهاتف</label><input name="phone" value="{{profile.phone}}" placeholder="01xxxxxxxxx"></div><div class="field"><label>هاتف الأب</label><input name="father_phone" value="{{profile.father_phone}}"></div><div class="field"><label>هاتف الأم</label><input name="mother_phone" value="{{profile.mother_phone}}"></div><div class="field"><label>المدرسة</label><input name="school" value="{{profile.school}}"></div><div class="field"><label>المحافظة</label><input name="governorate" value="{{profile.governorate}}"></div><div class="field"><label>الصف</label><input name="grade" value="{{profile.grade}}"></div><div class="field"><label>الشعبة</label><input name="section" value="{{profile.section}}"></div><div class="field"><label>وظيفة ولي الأمر</label><input name="parent_job" value="{{profile.parent_job}}"></div>
+</div><button class="btn">حفظ البيانات</button></form></div>
+{% endblock %}

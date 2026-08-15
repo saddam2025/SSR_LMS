@@ -1,0 +1,15 @@
+{% extends 'admin_base.html' %}
+{% block title %}إضافة تصنيف | المستشار{% endblock %}
+{% block page_label %}إضافة تصنيف{% endblock %}
+{% block admin_content %}
+<div class="admin-page-head"><div><span>الكورسات / التصنيفات</span><h1>إضافة تصنيف جديد</h1><p>أنشئ تصنيفًا واضحًا ليظهر في تنظيم لوحة الإدارة ويُربط بالكورسات.</p></div><a class="btn ghost" href="/admin/courses/categories">العودة للتصنيفات</a></div>
+<div class="admin-form-layout">
+  <section class="admin-panel admin-form-card"><form method="post" action="/admin/courses/categories"><input type="hidden" name="csrf" value="{{csrf}}">
+    <div class="field"><label>اسم التصنيف *</label><input name="name" maxlength="120" required placeholder="مثال: الصف الثالث الثانوي - الترم الأول"></div>
+    <div class="field"><label>الوصف</label><textarea name="description" rows="5" maxlength="1000" placeholder="وصف مختصر يساعدك في تنظيم المحتوى"></textarea></div>
+    <div class="grid"><div class="field"><label>الصف الدراسي</label><select name="grade"><option value="">كل الصفوف</option><option>الصف الأول الثانوي</option><option>الصف الثاني الثانوي عام</option><option>الصف الثاني بكالوريا</option><option>الصف الثالث الثانوي</option></select></div><div class="field"><label>الترتيب</label><input type="number" name="sort_order" min="-999" max="999" value="0"></div></div>
+    <div class="admin-form-actions"><a class="btn ghost" href="/admin/courses/categories">إلغاء</a><button class="btn">حفظ التصنيف</button></div>
+  </form></section>
+  <aside class="admin-help-card"><span>تنظيم أفضل</span><h3>استخدم التصنيفات لتبسيط إدارة المحتوى</h3><p>يمكنك إنشاء تصنيف لكل صف أو ترم أو نوع محتوى، ثم ربط كل كورس بالتصنيف المناسب من صفحة الكورسات.</p><ul><li>لا يحذف أو يغيّر الكورسات الحالية.</li><li>لا يحتاج إعادة إنشاء PostgreSQL.</li><li>يمكن تغيير الربط في أي وقت.</li></ul></aside>
+</div>
+{% endblock %}

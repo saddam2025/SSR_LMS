@@ -1,0 +1,14 @@
+{% extends "admin_base.html" %}{% block title %}الحصص المباشرة{% endblock %}{% block content %}
+<div class="admin-page-head"><div><small>LIVE CLASSES</small><h1>الجدول والحصص المباشرة</h1><p>إدارة مواعيد Zoom / Meet / البث وتذكيرات الطلاب.</p></div></div>
+<div class="teacher-studio-kpis live-kpis"><article><span>القادمة</span><strong>{{metrics.upcoming}}</strong></article><article><span>اليوم</span><strong>{{metrics.today}}</strong></article><article><span>المكتملة</span><strong>{{metrics.completed}}</strong></article><article><span>الإجمالي</span><strong>{{metrics.total}}</strong></article></div>
+<section class="admin-panel"><div class="admin-panel-head"><div><small>NEW LIVE CLASS</small><h2>إضافة حصة مباشرة</h2></div></div>
+<form method="post" action="/admin/live-classes/create" class="live-form"><input type="hidden" name="csrf" value="{{csrf}}">
+<label>الكورس<select name="course_id" required>{% for c in courses %}<option value="{{c.id}}">{{c.grade}} — {{c.title}}</option>{% endfor %}</select></label>
+<label>عنوان الحصة<input name="title" required maxlength="180"></label>
+<label>المزود<select name="provider"><option value="zoom">Zoom</option><option value="meet">Google Meet</option><option value="teams">Microsoft Teams</option><option value="youtube">YouTube Live</option><option value="custom">رابط بث مخصص</option></select></label>
+<label>الرابط<input type="url" name="meeting_url" placeholder="https://..."></label>
+<label>الموعد<input type="datetime-local" name="scheduled_at" required></label>
+<label>المدة بالدقائق<input type="number" name="duration_minutes" min="15" max="360" value="60"></label>
+<label class="full">ملاحظات<textarea name="notes" rows="3"></textarea></label><button class="btn">حفظ الحصة وإشعار الطلاب</button></form></section>
+<section class="admin-panel"><div class="admin-panel-head"><div><small>SCHEDULE</small><h2>جدول الحصص</h2></div></div><div class="table-wrap"><table class="report-table"><thead><tr><th>الحصة</th><th>الكورس</th><th>الموعد</th><th>المزود</th><th>الحالة</th><th>إدارة</th></tr></thead><tbody>{% for x in classes %}<tr><td><b>{{x.title}}</b></td><td>{{course_map.get(x.course_id).title if course_map.get(x.course_id) else x.course_id}}</td><td>{{x.scheduled_at.strftime('%Y-%m-%d %H:%M')}}</td><td>{{x.provider}}</td><td><span class="risk-badge {{'low' if x.status in ['scheduled','live'] else 'medium'}}">{{x.status}}</span></td><td><a class="btn secondary small" href="/admin/live-classes/{{x.id}}">فتح</a></td></tr>{% else %}<tr><td colspan="6">لا توجد حصص بعد.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

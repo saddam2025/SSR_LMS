@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071a35">
+  <meta name="robots" content="noindex,nofollow">
+  <title>{% block title %}لوحة الإدارة | المستشار{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=optional" rel="stylesheet">
+  <link rel="icon" href="/static/icon-192.png" sizes="192x192">
+  <link rel="stylesheet" href="/static/style.css?v=20260814-v57">
+</head>
+<body class="admin-body">
+<div class="admin-app-shell">
+  <aside class="admin-sidebar" aria-label="قائمة لوحة التحكم">
+    <a class="admin-brand" href="/dashboard">
+      <span class="admin-brand-mark">A+</span>
+      <span><strong>المستشار</strong><small>CONTROL CENTER</small></span>
+    </a>
+
+    {% if user and user.role in ['super_admin','admin','content_manager','support','accounting'] %}
+    <nav class="admin-side-nav">
+      <span class="admin-nav-label">الرئيسية</span>
+      {% if user.role in ['super_admin','admin'] %}<a class="{{'active' if request.url.path == '/admin' else ''}}" href="/admin"><span>⌂</span> نظرة عامة</a>{% endif %}
+
+      {% if user.role in ['super_admin','admin','content_manager'] %}
+      <span class="admin-nav-label">المحتوى التعليمي</span>
+      <a class="{{'active' if request.url.path == '/teacher' else ''}}" href="/teacher"><span>✎</span> استوديو المدرس</a>
+      <a class="{{'active' if request.url.path == '/teacher/content' else ''}}" href="/teacher/content"><span>▣</span> مركز المحتوى</a>
+      <a class="{{'active' if request.url.path == '/teacher/assessment' else ''}}" href="/teacher/assessment"><span>✓</span> مركز التقييم</a>
+      <a class="{{'active' if request.url.path == '/teacher/revision' else ''}}" href="/teacher/revision"><span>↻</span> خطط المراجعة</a>
+      <a class="{{'active' if request.url.path == '/teacher/mock-exams' else ''}}" href="/teacher/mock-exams"><span>✦</span> الامتحانات التجريبية</a>
+      <a class="{{'active' if request.url.path == '/admin/courses' else ''}}" href="/admin/courses"><span>▦</span> الكورسات</a>
+      <a class="{{'active' if '/courses/categories' in request.url.path and not request.url.path.endswith('/add') else ''}}" href="/admin/courses/categories"><span>≡</span> التصنيفات</a>
+      {% if user.role in ['super_admin','admin'] %}<a class="{{'active' if request.url.path.endswith('/categories/add') else ''}}" href="/admin/courses/categories/add"><span>＋</span> إضافة تصنيف</a>{% endif %}
+      {% endif %}
+
+      {% if user.role in ['super_admin','admin','content_manager','support'] %}
+      <span class="admin-nav-label">الطلاب والمتابعة</span>
+      {% if user.role in ['super_admin','admin'] %}<a class="{{'active' if request.url.path == '/admin/students' else ''}}" href="/admin/students"><span>♙</span> مركز الطلاب</a>{% endif %}
+      <a class="{{'active' if request.url.path.startswith('/admin/reports') else ''}}" href="/admin/reports"><span>▤</span> تقارير الأداء</a>
+      <a class="{{'active' if request.url.path == '/admin/attendance' else ''}}" href="/admin/attendance"><span>◷</span> الحضور والمتابعة</a>
+      {% if user.role in ['super_admin','admin','content_manager'] %}<a class="{{'active' if request.url.path.startswith('/admin/groups') else ''}}" href="/admin/groups"><span>◈</span> الصفوف والمجموعات</a><a class="{{'active' if request.url.path.startswith('/admin/live-classes') else ''}}" href="/admin/live-classes"><span>◉</span> الحصص المباشرة</a>{% endif %}
+      {% endif %}
+
+      <span class="admin-nav-label">الإدارة</span>
+      {% if user.role in ['super_admin','admin'] %}<a class="{{'active' if request.url.path == '/admin/users' else ''}}" href="/admin/users"><span>◎</span> الحسابات</a>{% endif %}
+      {% if user.role in ['super_admin','admin'] %}<a class="{{'active' if request.url.path == '/admin/homepage' else ''}}" href="/admin/homepage"><span>★</span> واجهة المنصة</a>{% endif %}
+      {% if user.role in ['super_admin','admin','accounting'] %}<a class="{{'active' if request.url.path == '/admin/commerce' else ''}}" href="/admin/commerce"><span>◫</span> المبيعات والاشتراكات</a><a class="{{'active' if request.url.path.startswith('/admin/code-inventory') else ''}}" href="/admin/code-inventory"><span>#</span> مخزون الأكواد</a>{% endif %}
+      {% if user.role in ['super_admin','admin','support'] %}<a class="{{'active' if request.url.path == '/admin/communications' else ''}}" href="/admin/communications"><span>✉</span> التواصل والإشعارات</a>{% endif %}
+      {% if user.role in ['super_admin','admin'] %}<a class="{{'active' if request.url.path == '/admin/security' else ''}}" href="/admin/security"><span>◆</span> الأمان والجلسات</a><a class="{{'active' if request.url.path == '/admin/system-status' else ''}}" href="/admin/system-status"><span>◉</span> حالة النظام</a>{% endif %}
+      {% if user.role in ['super_admin','admin','support'] %}<a href="/support">الدعم الفني</a>{% endif %}
+    </nav>
+    {% else %}
+    <nav class="admin-side-nav">
+      <span class="admin-nav-label">لوحة المنصة</span>
+      <a class="active" href="/admin"><span>⌂</span> نظرة عامة</a>
+    </nav>
+    {% endif %}
+
+    <div class="admin-sidebar-bottom">
+      <a href="/" target="_blank" rel="noopener">↗ عرض المنصة</a>
+      <a href="https://wa.me/201060309494" target="_blank" rel="noopener">واتساب 01060309494</a>
+      <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{csrf}}"><button type="submit">تسجيل الخروج</button></form>
+    </div>
+  </aside>
+
+  <section class="admin-stage">
+    <header class="admin-topbar">
+      <details class="admin-mobile-menu">
+        <summary aria-label="فتح قائمة لوحة التحكم">☰ القائمة</summary>
+        <div class="admin-mobile-panel">
+          {% if user and user.role in ['super_admin','admin','content_manager','support','accounting'] %}
+          {% if user.role in ['super_admin','admin'] %}<a href="/admin">نظرة عامة</a>{% endif %}
+          {% if user.role in ['super_admin','admin','content_manager'] %}<a href="/teacher">استوديو المدرس</a><a href="/teacher/content">مركز المحتوى</a><a href="/teacher/assessment">مركز التقييم</a><a href="/teacher/revision">خطط المراجعة</a><a href="/teacher/mock-exams">الامتحانات التجريبية</a><a href="/admin/courses">الكورسات</a><a href="/admin/courses/categories">التصنيفات</a>{% if user.role in ['super_admin','admin'] %}<a href="/admin/courses/categories/add">إضافة تصنيف</a>{% endif %}{% endif %}
+          {% if user.role in ['super_admin','admin','content_manager','support'] %}<a href="/admin/reports">تقارير الأداء</a><a href="/admin/attendance">الحضور والمتابعة</a>{% endif %}
+          {% if user.role in ['super_admin','admin','content_manager'] %}<a href="/admin/groups">الصفوف والمجموعات</a><a href="/admin/live-classes">الحصص المباشرة</a>{% endif %}
+          {% if user.role in ['super_admin','admin'] %}<a href="/admin/users">الحسابات</a>{% endif %}
+          {% if user.role in ['super_admin','admin'] %}<a href="/admin/homepage">واجهة المنصة</a>{% endif %}
+          {% if user.role in ['super_admin','admin','accounting'] %}<a href="/admin/commerce">المبيعات</a><a href="/admin/code-inventory">مخزون الأكواد</a>{% endif %}
+          {% if user.role in ['super_admin','admin','support'] %}<a href="/admin/communications">التواصل</a><a href="/support">الدعم الفني</a>{% endif %}
+          {% if user.role in ['super_admin','admin'] %}<a href="/admin/security">الأمان</a><a href="/admin/system-status">حالة النظام</a>{% endif %}
+          {% endif %}
+          <a href="/">عرض المنصة</a>
+        </div>
+      </details>
+      <div class="admin-topbar-title"><span>منصة المستشار</span><strong>{% block page_label %}لوحة التحكم{% endblock %}</strong></div>
+      <div class="admin-user-chip"><span class="admin-user-avatar">{{(user.name[0] if user and user.name else 'م')}}</span><div><strong>{{user.name if user else 'المستخدم'}}</strong><small>{% if user and user.role == 'super_admin' %}المدير العام{% elif user and user.role == 'admin' %}مدير المنصة{% elif user and user.role == 'content_manager' %}مشرف المحتوى{% elif user and user.role == 'support' %}الدعم الفني{% elif user and user.role == 'accounting' %}الحسابات{% else %}مستخدم{% endif %}</small></div></div>
+    </header>
+    <main class="admin-main">{% block admin_content %}{% endblock %}</main>
+  </section>
+</div>
+<script src="/static/admin-interactive.js?v=20260814-v57" defer></script>
+<script src="/static/admin-media-upload.js?v=20260814-v57" defer></script>
+</body>
+</html>

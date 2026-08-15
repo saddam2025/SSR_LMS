@@ -1,0 +1,20 @@
+{% extends 'admin_base.html' %}
+{% block title %}مركز التقييم | المستشار{% endblock %}
+{% block page_label %}مركز التقييم{% endblock %}
+{% block admin_content %}
+<div class="admin-page-head teacher-head"><div><span>ASSESSMENT CENTER</span><h1>مركز التقييم والتصحيح</h1><p>تابع الواجبات والتسليمات المتأخرة وطلبات إعادة التسليم والدرجات من شاشة واحدة.</p></div><div class="inline-actions"><a class="btn ghost" href="/teacher">استوديو المدرس</a><a class="btn" href="/admin/courses">إدارة الكورسات</a></div></div>
+
+<div class="teacher-studio-kpis assessment-kpis">
+  <article class="attention"><span>ينتظر التصحيح</span><strong>{{pending|length}}</strong><small>تسليم جاهز للمراجعة</small></article>
+  <article><span>إعادة تسليم</span><strong>{{revision|length}}</strong><small>طالب مطلوب منه تعديل</small></article>
+  <article><span>متأخر</span><strong>{{late|length}}</strong><small>تسليم بعد الموعد</small></article>
+  <article><span>لم يسلّم</span><strong>{{missing_rows|length}}</strong><small>بعد انتهاء الموعد</small></article>
+  <article><span>متوسط الدرجات</span><strong>{{avg_score}}%</strong><small>للتسليمات المصححة</small></article>
+</div>
+
+<section class="admin-panel"><div class="admin-panel-head"><div><small>GRADING QUEUE</small><h2>طابور التصحيح</h2></div></div>
+<div class="assessment-list">{% for sub in pending %}{% set h=homework_map.get(sub.homework_id) %}{% set st=students.get(sub.student_id) %}{% set c=courses.get(h.course_id) if h else none %}<article class="assessment-card"><div class="assessment-meta"><div><b>{{st.name if st else 'طالب'}}</b><small>{{c.title if c else ''}} • {{h.title if h else ''}}</small></div><span class="badge {% if h and h.due_at and sub.submitted_at > h.due_at %}warn{% else %}success{% endif %}">{% if h and h.due_at and sub.submitted_at > h.due_at %}متأخر{% else %}في الموعد{% endif %}</span></div><div class="student-answer">{{sub.answer_text}}</div><form method="post" action="/admin/homework/{{sub.homework_id}}/grade"><input type="hidden" name="csrf" value="{{csrf}}"><input type="hidden" name="student_id" value="{{sub.student_id}}"><input type="hidden" name="return_to" value="assessment"><div class="grid"><div class="field"><label>الدرجة /100</label><input type="number" min="0" max="100" step="0.5" name="score" value="{{sub.score if sub.score is not none else 100}}"></div><div class="field"><label>تعليق المدرس</label><input name="feedback" value="{{sub.feedback}}" placeholder="ملاحظة مختصرة للطالب"></div></div><div class="inline-actions"><button class="btn secondary small">اعتماد الدرجة</button></form><form method="post" action="/admin/homework/{{sub.homework_id}}/revision"><input type="hidden" name="csrf" value="{{csrf}}"><input type="hidden" name="student_id" value="{{sub.student_id}}"><input type="hidden" name="return_to" value="assessment"><input type="hidden" name="feedback" value="يرجى مراجعة الإجابة وفق ملاحظات المدرس وإعادة التسليم."><button class="btn ghost small">طلب إعادة التسليم</button></form></div></article>{% else %}<div class="empty">لا توجد واجبات تنتظر التصحيح حاليًا.</div>{% endfor %}</div></section>
+
+<div class="admin-dashboard-grid"><section class="admin-panel"><div class="admin-panel-head"><div><small>MISSING SUBMISSIONS</small><h2>طلاب لم يسلّموا بعد</h2></div></div><div class="assessment-compact">{% for row in missing_rows %}<div><div><b>{{row.student.name if row.student else 'طالب'}}</b><small>{{row.course.title if row.course else ''}} • {{row.homework.title}}</small></div><span class="badge warn">الموعد انتهى</span></div>{% else %}<div class="empty">لا توجد حالات تأخير بدون تسليم.</div>{% endfor %}</div></section>
+<aside class="admin-panel"><div class="admin-panel-head"><div><small>RECENT RESULTS</small><h2>آخر الدرجات</h2></div></div><div class="assessment-compact">{% for sub in graded[:12] %}{% set h=homework_map.get(sub.homework_id) %}{% set st=students.get(sub.student_id) %}<div><div><b>{{st.name if st else 'طالب'}}</b><small>{{h.title if h else ''}}</small></div><span class="badge success">{{sub.score|round(1)}} / 100</span></div>{% else %}<div class="empty">لا توجد درجات بعد.</div>{% endfor %}</div></aside></div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'admin_base.html' %}
+{% block title %}تصنيفات الكورسات | المستشار{% endblock %}
+{% block page_label %}التصنيفات{% endblock %}
+{% block admin_content %}
+<div class="admin-page-head"><div><span>الكورسات / التصنيفات</span><h1>تصنيفات الكورسات</h1><p>نظّم المحتوى حسب الصف أو الوحدة أو نوع الكورس بدون تغيير بيانات الكورسات القديمة.</p></div><a class="btn" href="/admin/courses/categories/add">+ إضافة تصنيف جديد</a></div>
+<section class="admin-panel">
+  <div class="admin-panel-head"><div><small>CATEGORIES</small><h2>كل التصنيفات</h2></div><span class="admin-count">{{categories|length}}</span></div>
+  <div class="table-wrap"><table><tr><th>الترتيب</th><th>الاسم</th><th>الصف</th><th>الكورسات</th><th>الحالة</th><th>إجراءات</th></tr>
+    {% for cat in categories %}<tr><td>{{cat.sort_order}}</td><td><b>{{cat.name}}</b><div class="muted">{{cat.description}}</div></td><td>{{cat.grade or 'كل الصفوف'}}</td><td>{{category_counts.get(cat.id, 0)}}</td><td><span class="badge {{'success' if cat.active else 'warn'}}">{{'نشط' if cat.active else 'موقوف'}}</span></td><td><div class="inline-actions"><form method="post" action="/admin/courses/categories/{{cat.id}}/toggle"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn ghost small">{{'إيقاف' if cat.active else 'تفعيل'}}</button></form><form method="post" action="/admin/courses/categories/{{cat.id}}/delete"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn ghost small">حذف</button></form></div></td></tr>
+    {% else %}<tr><td colspan="6"><div class="empty">لا توجد تصنيفات بعد. ابدأ بإضافة أول تصنيف.</div></td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% block title %}البحث | المستشار{% endblock %}{% block content %}
+<div class="page-head"><div><span class="eyebrow">بحث شامل</span><h1>ابحث في المنصة</h1></div></div>
+<form class="card" method="get"><div class="inline-actions"><input name="q" value="{{q}}" placeholder="درس، كورس، اختبار..." style="flex:1"><button class="btn">بحث</button></div></form>
+{% if q %}<div class="section-title"><h2>الكورسات</h2></div><div class="grid">{% for c in courses %}<a class="card card-hover" href="/course/{{c.id}}"><b>{{c.title}}</b><p class="muted">{{c.grade}}</p></a>{% else %}<div class="empty">لا توجد نتائج.</div>{% endfor %}</div>
+<div class="section-title"><h2>الدروس</h2></div><div class="list">{% for l in lessons %}<a class="list-item" href="/lesson/{{l.id}}"><b>{{l.title}}</b><span>فتح</span></a>{% else %}<div class="empty">لا توجد نتائج.</div>{% endfor %}</div>
+<div class="section-title"><h2>الاختبارات</h2></div><div class="list">{% for z in quizzes %}<a class="list-item" href="/quiz/{{z.id}}"><b>{{z.title}}</b><span>بدء الاختبار</span></a>{% else %}<div class="empty">لا توجد نتائج.</div>{% endfor %}</div>{% endif %}
+{% endblock %}

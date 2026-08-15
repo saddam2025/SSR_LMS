@@ -1,0 +1,18 @@
+{% extends 'admin_base.html' %}
+{% block title %}إدارة الكورسات | المستشار{% endblock %}
+{% block page_label %}الكورسات{% endblock %}
+{% block admin_content %}
+<div class="admin-page-head"><div><span>المحتوى التعليمي</span><h1>إدارة الكورسات</h1><p>أنشئ الكورسات، اربطها بتصنيف، وافتح صفحة الإدارة التفصيلية لكل كورس.</p></div><a class="btn secondary" href="/admin/courses/categories/add">+ إضافة تصنيف</a></div>
+<div class="admin-grid-2">
+  <section class="admin-panel"><div class="admin-panel-head"><div><small>COURSES</small><h2>الكورسات الحالية</h2></div><span class="admin-count">{{courses|length}}</span></div>
+    <div class="table-wrap"><table><tr><th>الكورس</th><th>الصف</th><th>التصنيف</th><th>السعر</th><th>الحالة</th><th>الإدارة</th></tr>
+      {% for c in courses %}<tr><td><b>{{c.title}}</b></td><td>{{c.grade}}</td><td>
+        <form class="inline-actions" method="post" action="/admin/course/{{c.id}}/category"><input type="hidden" name="csrf" value="{{csrf}}"><select name="category_id"><option value="0">بدون تصنيف</option>{% for cat in categories %}<option value="{{cat.id}}" {% if category_by_course.get(c.id) and category_by_course.get(c.id).id == cat.id %}selected{% endif %}>{{cat.name}}</option>{% endfor %}</select><button class="btn ghost small">حفظ</button></form>
+      </td><td>{{'%.0f'|format(c.price)}} ج.م</td><td><span class="badge {{'success' if c.published else 'warn'}}">{{'منشور' if c.published else 'مسودة'}}</span></td><td><a class="btn secondary small" href="/admin/course/{{c.id}}">فتح</a></td></tr>{% else %}<tr><td colspan="6">لا توجد كورسات.</td></tr>{% endfor %}
+    </table></div>
+  </section>
+  <aside class="admin-panel"><div class="admin-panel-head"><div><small>QUICK CREATE</small><h2>كورس جديد</h2></div></div>
+    <form method="post" action="/admin/courses"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>اسم الكورس</label><input name="title" required></div><div class="field"><label>الصف الدراسي</label><select name="grade"><option>الصف الأول الثانوي</option><option>الصف الثاني الثانوي عام</option><option>الصف الثاني بكالوريا</option><option>الصف الثالث الثانوي</option></select></div><div class="field"><label>السعر</label><input type="number" step="0.01" min="0" name="price" value="0"></div><button class="btn" style="width:100%">إنشاء الكورس</button></form>
+  </aside>
+</div>
+{% endblock %}

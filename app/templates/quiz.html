@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block title %}{{quiz.title}} | المستشار{% endblock %}{% block content %}
+<section class="quiz-head"><span class="badge warn">اختبار إلكتروني</span><h1 style="margin:10px 0 4px">{{quiz.title}}</h1><p style="margin:0;color:#d6e4f2">الوقت المحدد: {{quiz.time_limit_minutes}} دقيقة • المحاولة رقم {{attempt.id}}</p><div class="quiz-timer" data-quiz-timer="{{remaining_seconds}}">الوقت المتبقي: <strong data-time-left>--:--</strong></div></section>
+<form method="post" data-quiz-form><input type="hidden" name="csrf" value="{{csrf}}">{% for q in questions %}<div class="card quiz-question"><span class="badge">السؤال {{loop.index}}</span><h3>{{q.text}}</h3>{% for key,label in [('a',q.option_a),('b',q.option_b),('c',q.option_c),('d',q.option_d)] %}<label class="quiz-option"><input type="radio" name="q_{{q.id}}" value="{{key|upper}}" required><span>{{label}}</span></label>{% endfor %}</div>{% endfor %}<button class="btn" style="min-width:190px">إرسال الإجابات</button></form>
+<script src="/static/quiz-timer.js" defer></script>
+{% endblock %}

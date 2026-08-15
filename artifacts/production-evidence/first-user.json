@@ -1,0 +1,10 @@
+{
+  "timestamp": 0,
+  "go": false,
+  "summary": "Record a controlled production user acceptance after cutover",
+  "student_login_ok": false,
+  "course_access_ok": false,
+  "protected_video_ok": false,
+  "logout_ok": false,
+  "notes": "Use a dedicated test student; do not store credentials here."
+}

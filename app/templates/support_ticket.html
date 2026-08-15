@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel"><a href="/support">← العودة للدعم</a><h1>#{{ticket.id}} — {{ticket.subject}}</h1><p>الحالة: <b>{{ticket.status}}</b> · الأولوية: {{ticket.priority}}</p>
+<div class="ticket-thread">{% for m in messages %}<article class="ticket-message {% if m.is_staff %}staff{% endif %}"><b>{{ authors.get(m.author_id).name if authors.get(m.author_id) else 'مستخدم' }}{% if m.is_staff %} — فريق المستشار{% endif %}</b><p>{{m.body}}</p><small>{{m.created_at}}</small></article>{% endfor %}</div>
+<form method="post" action="/support/tickets/{{ticket.id}}/reply"><input type="hidden" name="csrf" value="{{csrf}}"><textarea name="message" maxlength="5000" required></textarea><button>إرسال الرد</button></form>
+{% if user.role in ['super_admin','admin','support'] %}<form method="post" action="/support/tickets/{{ticket.id}}/status"><input type="hidden" name="csrf" value="{{csrf}}"><select name="status"><option>open</option><option>pending</option><option>resolved</option><option>closed</option></select><button>تغيير الحالة</button></form>{% endif %}
+</section>{% endblock %}

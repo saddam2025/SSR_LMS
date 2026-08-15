@@ -1,0 +1,19 @@
+{% extends "admin_base.html" %}
+{% block title %}{{group.name}} | المجموعات{% endblock %}
+{% block page_label %}{{group.name}}{% endblock %}
+{% block admin_content %}
+<section class="admin-page-head"><div><span class="eyebrow">إدارة المجموعة</span><h1>{{group.name}}</h1><p>{{group.grade}}{% if group.description %} · {{group.description}}{% endif %}</p></div><a class="btn" href="/admin/groups">كل المجموعات</a></section>
+<div class="admin-kpi-grid"><article><small>الطلاب</small><strong>{{members|length}}</strong></article><article><small>الكورسات المسندة</small><strong>{{assigned_ids|length}}</strong></article><article><small>الحصص المتاحة للتخصيص</small><strong>{{classes|length}}</strong></article></div>
+<div class="admin-two-col">
+<section class="admin-card"><h2>الطلاب</h2>
+  {% if available %}<form method="post" action="/admin/groups/{{group.id}}/member" class="inline-form"><input type="hidden" name="csrf" value="{{csrf}}"><select name="student_id" required>{% for s in available %}<option value="{{s.id}}">{{s.name}} — {{s.email}}</option>{% endfor %}</select><button class="primary">إضافة طالب</button></form>{% endif %}
+  <div class="admin-list">{% for s in members %}<div class="admin-list-row"><div><strong>{{s.name}}</strong><small>{{s.email}}</small></div><form method="post" action="/admin/groups/{{group.id}}/member/{{s.id}}/remove"><input type="hidden" name="csrf" value="{{csrf}}"><button class="danger" type="submit">إزالة</button></form></div>{% else %}<p class="muted">لا يوجد طلاب في المجموعة.</p>{% endfor %}</div>
+</section>
+<section class="admin-card"><h2>إسناد الكورسات</h2>
+  <div class="admin-list">{% for c in courses %}<div class="admin-list-row"><div><strong>{{c.title}}</strong><small>{{c.grade}}</small></div><form method="post" action="/admin/groups/{{group.id}}/course"><input type="hidden" name="csrf" value="{{csrf}}"><input type="hidden" name="course_id" value="{{c.id}}"><input type="hidden" name="action" value="{{'remove' if c.id in assigned_ids else 'assign'}}"><button class="{{'danger' if c.id in assigned_ids else 'primary'}}">{{'إلغاء الإسناد' if c.id in assigned_ids else 'إسناد للمجموعة'}}</button></form></div>{% endfor %}</div>
+</section>
+</div>
+<section class="admin-card"><h2>تخصيص الحصص المباشرة</h2><p class="muted">الحصة غير المخصصة لمجموعة تظل متاحة لكل طلاب الكورس. عند تخصيصها، تظهر فقط لأعضاء هذه المجموعة.</p>
+<div class="admin-list">{% for item in classes %}<div class="admin-list-row"><div><strong>{{item.title}}</strong><small>{{course_map[item.course_id].title if item.course_id in course_map else ''}} · {{item.scheduled_at.strftime('%Y-%m-%d %H:%M')}}</small></div><form method="post" action="/admin/groups/{{group.id}}/live-class"><input type="hidden" name="csrf" value="{{csrf}}"><input type="hidden" name="live_class_id" value="{{item.id}}"><input type="hidden" name="action" value="{{'remove' if class_group.get(item.id)==group.id else 'assign'}}"><button class="{{'danger' if class_group.get(item.id)==group.id else 'primary'}}">{{'إلغاء التخصيص' if class_group.get(item.id)==group.id else ('مخصصة لمجموعة أخرى' if class_group.get(item.id) else 'تخصيص لهذه المجموعة')}}</button></form></div>{% else %}<p class="muted">أسند كورسًا للمجموعة أولًا لتظهر حصصه هنا.</p>{% endfor %}</div>
+</section>
+{% endblock %}

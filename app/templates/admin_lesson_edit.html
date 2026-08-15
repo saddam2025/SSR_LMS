@@ -1,0 +1,130 @@
+{% extends 'admin_base.html' %}
+{% block title %}تحرير {{lesson.title}} | المستشار{% endblock %}
+{% block admin_content %}
+<div class="page-head">
+  <div><span class="eyebrow">استوديو الدرس</span><h1>{{lesson.title}}</h1><p class="muted">{{course.title}} • ترتيب {{lesson.order_index}} • {{'منشور' if lesson.published else 'مسودة'}}</p></div>
+  <div class="inline-actions"><a class="btn secondary" href="/lesson/{{lesson.id}}">معاينة الطالب</a><a class="btn ghost" href="/admin/course/{{course.id}}#lesson-{{lesson.id}}">العودة للكورس</a></div>
+</div>
+{% if request.query_params.get('created') %}<div class="upload-notice success"><b>تم إنشاء الدرس كمسودة.</b><span>ارفع المحاضرة والمرفقات، راجع المعاينة، ثم فعّل النشر للطلاب.</span></div>{% endif %}
+
+<div class="content-workbench" aria-label="أدوات الدرس">
+  <a href="#lesson-details"><b>✎ بيانات الدرس</b><small>العنوان والشرح والنشر</small></a>
+  <a href="#drip-control"><b>🔓 الفتح التدريجي</b><small>Drip + فتح يدوي</small></a>
+  <a href="#video-upload"><b>▶ رفع المحاضرة</b><small>استكمال تلقائي + Stream</small></a>
+  <a href="#lesson-media"><b>⬆ المرفقات</b><small>PDF / صور / فيديو</small></a>
+  <a href="/admin/course/{{course.id}}#interactive-learning"><b>⚡ تفاعلي</b><small>أسئلة توقف وFlash Cards</small></a>
+</div>
+
+<div class="split" id="lesson-details">
+  <section class="card">
+    <div class="section-title"><div><span class="eyebrow">التحرير</span><h2>بيانات الدرس</h2></div></div>
+    <form method="post" action="/admin/lesson/{{lesson.id}}/update">
+      <input type="hidden" name="csrf" value="{{csrf}}">
+      <div class="field"><label>عنوان الدرس</label><input name="title" value="{{lesson.title}}" maxlength="180" required></div>
+      <div class="field"><label>الشرح / المحتوى النصي</label><textarea name="body" rows="12">{{lesson.body}}</textarea></div>
+      <div class="field" id="lesson-video"><label>رابط فيديو خارجي HTTPS (اختياري)</label><input type="url" name="video_url" value="{{lesson.video_url}}" placeholder="https://..."><small class="muted">استخدم أداة رفع المحاضرة بالأسفل للرفع المباشر؛ هذا الحقل مخصص للروابط الموجودة مسبقًا.</small></div>
+      <div class="grid">
+        <div class="field"><label>ترتيب الدرس</label><input type="number" name="order_index" min="1" max="10000" value="{{lesson.order_index}}" required></div>
+        <label class="option-row"><input type="checkbox" name="published" value="on" {% if lesson.published %}checked{% endif %}><span>منشور ومتاح للطلاب</span></label>
+      </div>
+      <button class="btn">حفظ كل تعديلات الدرس</button>
+    </form>
+  </section>
+  <aside class="card">
+    <div class="section-title"><div><span class="eyebrow">الترتيب</span><h2>مكان الدرس داخل الكورس</h2></div></div>
+    <div class="lesson-list compact">{% for item in siblings %}<div class="lesson-row {% if item.id==lesson.id %}is-current{% endif %}"><div class="lesson-index">{{item.order_index}}</div><div class="lesson-info"><b>{{item.title}}</b><small>{{'هذا الدرس' if item.id==lesson.id else ('منشور' if item.published else 'مسودة')}}</small></div></div>{% endfor %}</div>
+    <div class="inline-actions lesson-move-actions">
+      <form method="post" action="/admin/lesson/{{lesson.id}}/move"><input type="hidden" name="csrf" value="{{csrf}}"><input type="hidden" name="direction" value="up"><button class="btn secondary small">↑ لأعلى</button></form>
+      <form method="post" action="/admin/lesson/{{lesson.id}}/move"><input type="hidden" name="csrf" value="{{csrf}}"><input type="hidden" name="direction" value="down"><button class="btn secondary small">↓ لأسفل</button></form>
+    </div>
+  </aside>
+</div>
+
+
+<section id="drip-control" class="section-block">
+  <div class="section-title"><div><span class="eyebrow">DRIP CONTENT V25</span><h2>الفتح التدريجي للدرس</h2><p class="muted">تحكم في توقيت فتح هذا الدرس لكل طالب حسب الإنجاز أو مدة الاشتراك.</p></div><span class="badge">{{drip_rule.mode if drip_rule and drip_rule.enabled else 'previous (default)'}}</span></div>
+  <div class="split">
+    <section class="card">
+      <form method="post" action="/admin/lesson/{{lesson.id}}/drip-rule">
+        <input type="hidden" name="csrf" value="{{csrf}}">
+        <div class="field"><label>قاعدة فتح الدرس</label><select name="mode">
+          <option value="open" {% if drip_rule and drip_rule.mode=='open' %}selected{% endif %}>متاح مباشرة بعد الاشتراك</option>
+          <option value="previous" {% if not drip_rule or drip_rule.mode=='previous' %}selected{% endif %}>بعد إكمال الدرس السابق</option>
+          <option value="days" {% if drip_rule and drip_rule.mode=='days' %}selected{% endif %}>بعد عدد أيام من الاشتراك</option>
+          <option value="previous_and_days" {% if drip_rule and drip_rule.mode=='previous_and_days' %}selected{% endif %}>إكمال السابق + مرور عدد الأيام</option>
+        </select></div>
+        <div class="field"><label>عدد الأيام بعد الاشتراك</label><input type="number" name="delay_days" min="0" max="3650" value="{{drip_rule.delay_days if drip_rule else 0}}"><small class="muted">يُستخدم فقط في القواعد التي تعتمد على الأيام.</small></div>
+        <label class="option-row"><input type="checkbox" name="enabled" value="on" {% if not drip_rule or drip_rule.enabled %}checked{% endif %}><span>تفعيل قاعدة V25 لهذا الدرس</span></label>
+        <button class="btn">حفظ قاعدة الفتح</button>
+      </form>
+    </section>
+    <aside class="card">
+      <h3>فتح أو قفل لطالب محدد</h3><p class="muted">هذا التجاوز له أولوية على القاعدة العامة، ويمكن تحديد انتهاء تلقائي له.</p>
+      <form method="post" action="/admin/lesson/{{lesson.id}}/access-override">
+        <input type="hidden" name="csrf" value="{{csrf}}">
+        <div class="field"><label>الطالب</label><select name="student_id" required><option value="">اختر الطالب</option>{% for student in students %}<option value="{{student.id}}">{{student.name}} — {{student.email}}</option>{% endfor %}</select></div>
+        <div class="grid"><div class="field"><label>الإجراء</label><select name="action"><option value="unlock">فتح يدوي</option><option value="lock">قفل يدوي</option><option value="clear">إلغاء التجاوز</option></select></div><div class="field"><label>ينتهي في (اختياري)</label><input type="datetime-local" name="expires_at"></div></div>
+        <div class="field"><label>ملاحظة</label><input name="note" maxlength="300" placeholder="سبب الفتح أو القفل"></div>
+        <button class="btn secondary">تطبيق على الطالب</button>
+      </form>
+    </aside>
+  </div>
+  {% if overrides %}<div class="card"><h3>التجاوزات الحالية</h3><div class="list">{% for item in overrides %}<div class="list-item"><div><b>{{override_users.get(item.user_id).name if override_users.get(item.user_id) else ('طالب #' ~ item.user_id)}}</b><div class="muted">{{'فتح يدوي' if item.action=='unlock' else 'قفل يدوي'}}{% if item.expires_at %} • حتى {{item.expires_at.strftime('%Y-%m-%d %H:%M')}}{% endif %}{% if item.note %} • {{item.note}}{% endif %}</div></div><span class="badge {{'success' if item.action=='unlock' else 'warn'}}">{{item.action}}</span></div>{% endfor %}</div></div>{% endif %}
+</section>
+
+<section id="video-upload" class="section-block stream-upload-panel">
+  <div class="section-title"><div><span class="eyebrow">V57 • RESUMABLE LECTURE UPLOAD</span><h2>رفع المحاضرة مباشرة إلى Cloudflare Stream</h2><p class="muted">الرفع يتم من جهازك إلى Stream على أجزاء، ويستكمل من آخر جزء عند انقطاع الإنترنت أو إعادة المحاولة.</p></div><span class="badge {{'success' if stream_upload_configured else 'warn'}}">{{'جاهز' if stream_upload_configured else 'يحتاج إعداد'}}</span></div>
+  <div class="card upload-drop-card">
+    {% if stream_upload_configured %}
+    <form data-stream-upload-form data-lesson-id="{{lesson.id}}">
+      <input type="hidden" name="csrf" value="{{csrf}}">
+      <div class="field"><label>ملف المحاضرة</label><input type="file" required accept="video/mp4,video/quicktime,video/webm,video/x-m4v,video/x-matroska,.mp4,.mov,.m4v,.mkv,.webm,.avi,.mpeg,.mpg"></div>
+      <div class="creator-tip"><b>رفع قوي للإنترنت غير المستقر:</b><span>يدعم الملفات الكبيرة حتى {{(stream_upload_max_bytes/1024/1024/1024)|round(1)}} GB، مع إعادة المحاولة والاستكمال التلقائي. يبقى الدرس مسودة حتى تصبح المعالجة جاهزة وتراجعه بنفسك.</span></div>
+      <div class="upload-progress" data-upload-progress hidden><div><span data-upload-progress-bar></span></div><b data-upload-progress-label>0%</b></div>
+      <div class="upload-message" data-upload-message hidden role="status" aria-live="polite"></div>
+      <button class="btn" type="submit">ابدأ رفع المحاضرة</button>
+    </form>
+    {% else %}
+    <div class="upload-message" data-kind="error"><b>رفع Stream غير مهيأ بعد.</b><span>أضف CF_ACCOUNT_ID وCF_STREAM_API_TOKEN بصلاحية Stream Edit ضمن أسرار Cloudflare، ثم أعد النشر.</span></div>
+    {% endif %}
+  </div>
+  {% if stream_uid %}
+  <div class="card stream-current-video"><div><b>الفيديو الحالي مرتبط بـ Cloudflare Stream</b><small>UID: {{stream_uid}} • {{video_profile.processing_status if video_profile else 'غير محدد'}}</small></div><button type="button" class="btn secondary small" data-stream-status-button data-lesson-id="{{lesson.id}}" data-uid="{{stream_uid}}" data-csrf="{{csrf}}">تحديث حالة المعالجة</button></div>
+  <div class="upload-message" data-stream-status-message hidden role="status" aria-live="polite"></div>
+  {% endif %}
+</section>
+
+<section id="video-control" class="section-block video-control-panel">
+  <div class="section-title"><div><span class="eyebrow">VIDEO CONTROL CENTER</span><h2>إعدادات الفيديو والبث</h2><p class="muted">بيانات تشغيل وإدارة للفيديو بدون تغيير رابط الدرس الأساسي.</p></div>{% if video_profile %}<span class="badge {{'success' if video_profile.processing_status=='ready' else 'warn'}}">{{video_profile.processing_status|upper}}</span>{% endif %}</div>
+  <div class="card">
+    <form method="post" action="/admin/lesson/{{lesson.id}}/video-profile">
+      <input type="hidden" name="csrf" value="{{csrf}}">
+      <div class="video-settings-grid">
+        <div class="field"><label>مزود الفيديو</label><select name="provider"><option value="external" {% if not video_profile or video_profile.provider=='external' %}selected{% endif %}>External / رابط خارجي</option><option value="cloudflare" {% if video_profile and video_profile.provider=='cloudflare' %}selected{% endif %}>Cloudflare Stream</option><option value="bunny" {% if video_profile and video_profile.provider=='bunny' %}selected{% endif %}>Bunny Stream</option><option value="vimeo" {% if video_profile and video_profile.provider=='vimeo' %}selected{% endif %}>Vimeo</option><option value="mux" {% if video_profile and video_profile.provider=='mux' %}selected{% endif %}>Mux</option><option value="custom" {% if video_profile and video_profile.provider=='custom' %}selected{% endif %}>Custom</option></select></div>
+        <div class="field"><label>نوع البث</label><select name="stream_type"><option value="auto" {% if not video_profile or video_profile.stream_type=='auto' %}selected{% endif %}>Auto</option><option value="hls" {% if video_profile and video_profile.stream_type=='hls' %}selected{% endif %}>HLS</option><option value="dash" {% if video_profile and video_profile.stream_type=='dash' %}selected{% endif %}>MPEG-DASH</option><option value="mp4" {% if video_profile and video_profile.stream_type=='mp4' %}selected{% endif %}>MP4</option></select></div>
+        <div class="field"><label>الحماية / DRM</label><select name="drm_mode"><option value="none" {% if not video_profile or video_profile.drm_mode=='none' %}selected{% endif %}>بدون DRM</option><option value="signed" {% if video_profile and video_profile.drm_mode=='signed' %}selected{% endif %}>Signed URL / Token</option><option value="widevine" {% if video_profile and video_profile.drm_mode=='widevine' %}selected{% endif %}>Widevine</option><option value="fairplay" {% if video_profile and video_profile.drm_mode=='fairplay' %}selected{% endif %}>FairPlay</option><option value="playready" {% if video_profile and video_profile.drm_mode=='playready' %}selected{% endif %}>PlayReady</option><option value="multi-drm" {% if video_profile and video_profile.drm_mode=='multi-drm' %}selected{% endif %}>Multi-DRM</option></select></div>
+        <div class="field"><label>حالة التجهيز</label><select name="processing_status"><option value="draft" {% if video_profile and video_profile.processing_status=='draft' %}selected{% endif %}>Draft</option><option value="uploading" {% if video_profile and video_profile.processing_status=='uploading' %}selected{% endif %}>Uploading</option><option value="processing" {% if video_profile and video_profile.processing_status=='processing' %}selected{% endif %}>Processing</option><option value="ready" {% if not video_profile or video_profile.processing_status=='ready' %}selected{% endif %}>Ready</option><option value="blocked" {% if video_profile and video_profile.processing_status=='blocked' %}selected{% endif %}>Blocked</option></select></div>
+      </div>
+      <div class="field"><label>Thumbnail HTTPS</label><input type="url" name="thumbnail_url" value="{{video_profile.thumbnail_url if video_profile else ''}}" placeholder="https://cdn.example.com/lesson-cover.jpg"><small class="muted">تظهر كصورة غلاف للمشغل عندما يكون نوع الفيديو مباشرًا داخل الصفحة.</small></div>
+      <div class="video-duration-row"><div class="field"><label>المدة — دقائق</label><input type="number" min="0" max="9999" name="duration_minutes" value="{{(video_profile.duration_seconds//60) if video_profile else 0}}"></div><div class="field"><label>ثوانٍ</label><input type="number" min="0" max="59" name="duration_seconds" value="{{(video_profile.duration_seconds%60) if video_profile else 0}}"></div></div>
+      <div class="creator-tip"><b>مهم:</b><span>اختيار Widevine/FairPlay/Multi-DRM هنا يسجل إعداد الدرس داخل المنصة؛ التشفير والترخيص الفعليان يتطلبان ربط مزود DRM خارجي ومفاتيحه.</span></div>
+      <button class="btn">حفظ إعدادات الفيديو</button>
+    </form>
+  </div>
+</section>
+
+<section id="lesson-media" class="section-block">
+  <div class="section-title"><div><span class="eyebrow">مكتبة الدرس</span><h2>الفيديو والملفات المرفقة</h2><p class="muted">كل الملفات هنا مرتبطة بهذا الدرس فقط.</p></div><span class="badge">{{assets|length}} ملف</span></div>
+  <div class="card upload-drop-card">
+    <form method="post" enctype="multipart/form-data" action="/admin/course/{{course.id}}/media" data-media-upload-form>
+      <input type="hidden" name="csrf" value="{{csrf}}"><input type="hidden" name="lesson_id" value="{{lesson.id}}"><input type="hidden" name="return_to" value="/admin/lesson/{{lesson.id}}/edit#lesson-media">
+      <div class="field"><label>اختر PDF / صورة{% if not is_production %} / فيديو{% endif %}</label><input type="file" name="file" required accept="application/pdf,image/png,image/jpeg{% if not is_production %},video/mp4,video/webm{% endif %}"></div>
+      <div class="creator-tip"><b>الحماية:</b><span>PDF والصور تعرض بعد التحقق وبعلامة مائية. في Production يتم إدخال الفيديو من إعدادات Cloudflare Stream ولا يُرفع كملف خام.</span></div>
+      <div class="upload-progress" data-upload-progress hidden><div><span data-upload-progress-bar></span></div><b data-upload-progress-label>0%</b></div>
+      <div class="upload-message" data-upload-message hidden role="status" aria-live="polite"></div>
+      <button class="btn" type="submit">رفع وإرفاق بالدرس</button>
+    </form>
+  </div>
+  {% if assets %}<div class="card"><div class="list">{% for a in assets %}<div class="list-item"><div><b>{{a.original_name}}</b><div class="muted">{{a.mime_type}} • {{(a.size_bytes/1024/1024)|round(2)}} MB</div></div><div class="inline-actions"><a class="btn secondary small" href="/protected/media/{{a.id}}" target="_blank" rel="noopener">معاينة محمية</a><form method="post" action="/admin/media/{{a.id}}/delete"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn ghost small">حذف</button></form></div></div>{% endfor %}</div></div>{% else %}<div class="empty">لا توجد مرفقات لهذا الدرس حتى الآن.</div>{% endif %}
+</section>
+{% endblock %}

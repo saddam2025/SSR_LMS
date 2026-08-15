@@ -1,0 +1,10 @@
+{
+  "timestamp": 0,
+  "go": false,
+  "summary": "Replace after rollback plan rehearsal/review",
+  "rollback_owner_assigned": false,
+  "previous_release_available": false,
+  "database_restore_path_verified": false,
+  "dns_rollback_steps_verified": false,
+  "notes": "Do not include secrets, passwords, tokens, or private URLs."
+}

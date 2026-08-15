@@ -1,0 +1,7 @@
+{% extends "admin_base.html" %}
+{% block admin_content %}
+<h1>الدعم الفني والتذاكر</h1>
+<div class="admin-list">{% for t in tickets %}
+<a class="ticket-row" href="/support/tickets/{{t.id}}"><b>#{{t.id}} — {{t.subject}}</b><span>{{ owners.get(t.user_id).name if owners.get(t.user_id) else 'طالب' }} · {{t.category}} · {{t.priority}} · {{t.status}}</span></a>
+{% else %}<p>لا توجد تذاكر.</p>{% endfor %}</div>
+{% endblock %}

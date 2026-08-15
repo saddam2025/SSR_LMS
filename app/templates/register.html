@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}إنشاء حساب | المستشار{% endblock %}
+{% block content %}
+<section class="auth-card"><h1>إنشاء حساب طالب</h1><p class="muted">أنشئ حسابك ثم ابدأ الكورسات والاختبارات ومتابعة تقدمك.</p>
+{% if error %}<div class="alert danger">{{error}}</div>{% endif %}
+<form method="post" action="/register" class="stack"><input type="hidden" name="csrf" value="{{csrf}}">
+<label>الاسم بالكامل<input name="name" minlength="3" maxlength="120" required autocomplete="name"></label>
+<label>البريد الإلكتروني<input name="email" type="email" maxlength="190" required autocomplete="email"></label>
+<label>رقم الهاتف<input name="phone" inputmode="numeric" maxlength="15" required autocomplete="tel" placeholder="01xxxxxxxxx"></label>
+<label>الصف الدراسي<select name="grade" required><option value="">اختر الصف</option><option>الصف الأول الثانوي</option><option>الصف الثاني الثانوي عام</option><option>الصف الثاني بكالوريا</option><option>الصف الثالث الثانوي</option></select></label>
+<label>كلمة المرور<input name="password" type="password" minlength="12" required autocomplete="new-password"></label>
+<label>تأكيد كلمة المرور<input name="password_confirm" type="password" minlength="12" required autocomplete="new-password"></label>
+<button class="btn" type="submit">إنشاء الحساب</button></form><p class="muted">لديك حساب؟ <a href="/login">تسجيل الدخول</a></p></section>
+{% endblock %}

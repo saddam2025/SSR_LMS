@@ -1,0 +1,43 @@
+{% extends 'admin_base.html' %}
+{% block title %}مركز المبيعات والاشتراكات | المستشار{% endblock %}
+{% block page_label %}المبيعات والاشتراكات{% endblock %}
+{% block admin_content %}
+<div class="page-head"><div><span class="eyebrow">COMMERCE CENTER · V14</span><h1>مركز المبيعات والاشتراكات</h1><p class="muted">إدارة الإيرادات والمدفوعات والاشتراكات والكوبونات وأكواد التفعيل من شاشة واحدة.</p></div><span class="badge {{'success' if paymob_ready else 'warn'}}">Paymob: {{'جاهز' if paymob_ready else 'بانتظار مفاتيح التاجر'}}</span></div>
+
+<div class="stats-grid">
+  <div class="stat-card"><span>إجمالي الإيراد</span><strong>{{'%.2f'|format(metrics.revenue_total)}} ج.م</strong><small>من العمليات المؤكدة</small></div>
+  <div class="stat-card"><span>آخر 30 يومًا</span><strong>{{'%.2f'|format(metrics.revenue_30)}} ج.م</strong><small>{{metrics.paid_count}} عملية مدفوعة إجمالًا</small></div>
+  <div class="stat-card"><span>اشتراكات نشطة</span><strong>{{metrics.active_subscriptions}}</strong><small>{{metrics.expiring_subscriptions}} تنتهي خلال 7 أيام</small></div>
+  <div class="stat-card"><span>متابعة الدفع</span><strong>{{metrics.pending_count}}</strong><small>{{metrics.failed_count}} عمليات فاشلة/مرفوضة</small></div>
+</div>
+
+<div class="section-title"><div><span class="eyebrow">SUBSCRIPTIONS</span><h2>إدارة الاشتراكات</h2></div><span class="badge">{{metrics.expired_subscriptions}} منتهي</span></div>
+<div class="split">
+  <div class="card"><h3>منح اشتراك يدوي</h3><form method="post" action="/admin/subscriptions/grant"><input type="hidden" name="csrf" value="{{csrf}}">
+    <div class="field"><label>الطالب</label><select name="user_id" required>{% for s in students %}<option value="{{s.id}}">{{s.name}} — {{s.email}}</option>{% endfor %}</select></div>
+    <div class="field"><label>الكورس</label><select name="course_id" required>{% for c in courses %}<option value="{{c.id}}">{{c.title}}</option>{% endfor %}</select></div>
+    <div class="field"><label>مدة الاشتراك بالأيام</label><input type="number" name="duration_days" min="0" max="3650" value="30"><small class="muted">0 = بدون تاريخ انتهاء</small></div>
+    <div class="field"><label>المبلغ المسجل</label><input type="number" step="0.01" min="0" name="amount" value="0"></div><button class="btn">تفعيل الاشتراك</button>
+  </form></div>
+  <div><div class="list">
+    {% for s in subscriptions %}{% set usr=users.get(s.user_id) %}{% set crs=course_map.get(s.course_id) %}
+    <div class="list-item"><div><b>{{usr.name if usr else ('طالب #' ~ s.user_id)}}</b><div class="muted">{{crs.title if crs else ('كورس #' ~ s.course_id)}} · بدأ {{s.starts_at.strftime('%Y-%m-%d')}}</div><small>{% if s.ends_at %}ينتهي {{s.ends_at.strftime('%Y-%m-%d')}}{% else %}بدون تاريخ انتهاء{% endif %} · {{s.amount}} ج.م</small></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="badge {{'success' if s.status=='active' and (not s.ends_at or s.ends_at>now) else 'warn'}}">{{s.status}}</span>
+      <form method="post" action="/admin/subscriptions/{{s.id}}/extend" style="display:flex;gap:4px"><input type="hidden" name="csrf" value="{{csrf}}"><input name="days" type="number" min="1" max="3650" value="30" style="width:72px"><button class="btn secondary" type="submit">تمديد</button></form>
+      <form method="post" action="/admin/subscriptions/{{s.id}}/status"><input type="hidden" name="csrf" value="{{csrf}}"><input type="hidden" name="status" value="{{'cancelled' if s.status=='active' else 'active'}}"><button class="btn secondary" type="submit">{{'إيقاف' if s.status=='active' else 'تفعيل'}}</button></form></div>
+    </div>{% else %}<div class="empty">لا توجد اشتراكات بعد.</div>{% endfor %}
+  </div></div>
+</div>
+
+<div class="section-title"><div><span class="eyebrow">PAYMENTS</span><h2>آخر عمليات الدفع</h2></div></div>
+<div class="table-wrap"><table><tr><th>الطالب</th><th>الكورس</th><th>المرجع</th><th>المبلغ</th><th>الكوبون</th><th>الحالة</th><th>التاريخ</th></tr>
+{% for p in payments %}{% set usr=users.get(p.user_id) %}{% set crs=course_map.get(p.course_id) %}<tr><td>{{usr.name if usr else ('#' ~ p.user_id)}}</td><td>{{crs.title if crs else ('#' ~ p.course_id)}}</td><td><small>{{p.merchant_reference}}</small></td><td>{{p.amount}} {{p.currency}}</td><td>{{p.coupon_code or '—'}}</td><td><span class="badge {{'success' if p.status=='paid' else 'warn'}}">{{p.status}}</span></td><td>{{p.created_at.strftime('%Y-%m-%d %H:%M')}}</td></tr>{% else %}<tr><td colspan="7">لا توجد عمليات دفع بعد.</td></tr>{% endfor %}</table></div>
+
+<div class="section-title"><div><span class="eyebrow">COUPONS</span><h2>الكوبونات</h2></div></div>
+<div class="split"><div class="card"><h3>إنشاء كوبون</h3><form method="post" action="/admin/coupons"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>الكود</label><input name="code" required></div><div class="field"><label>نسبة الخصم</label><input name="discount_percent" type="number" min="0" max="100" required></div><div class="field"><label>الحد الأقصى للاستخدام</label><input name="max_uses" type="number" min="0" value="0"><small class="muted">0 = بلا حد</small></div><div class="field"><label>تاريخ الانتهاء</label><input name="expires_at" type="datetime-local"></div><button class="btn">إنشاء الكوبون</button></form></div>
+<div class="list">{% for c in coupons %}<div class="list-item"><div><b>{{c.code}}</b><div class="muted">خصم {{c.discount_percent}}% · {{c.used_count}} / {{c.max_uses if c.max_uses else '∞'}}</div><small>{% if c.expires_at %}ينتهي {{c.expires_at.strftime('%Y-%m-%d %H:%M')}}{% else %}بدون انتهاء{% endif %}</small></div><form method="post" action="/admin/coupons/{{c.id}}/toggle"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn secondary">{{'إيقاف' if c.active else 'تفعيل'}}</button></form></div>{% else %}<div class="empty">لا توجد كوبونات بعد.</div>{% endfor %}</div></div>
+
+<div class="section-title"><div><span class="eyebrow">ACTIVATION CODES</span><h2>أكواد تفعيل الكورسات</h2></div></div>
+<div class="split"><div class="card"><form method="post" action="/admin/activation-codes"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>الكورس</label><select name="course_id">{% for c in courses %}<option value="{{c.id}}">{{c.title}}</option>{% endfor %}</select></div><div class="field"><label>الكود</label><input name="code"><small class="muted">اتركه فارغًا للتوليد التلقائي</small></div><div class="field"><label>عدد مرات الاستخدام</label><input type="number" name="max_uses" value="1" min="1" max="10000"></div><div class="field"><label>تاريخ الانتهاء</label><input type="datetime-local" name="expires_at"></div><button class="btn">إنشاء كود تفعيل</button></form></div>
+<div class="list">{% for a in activation_codes %}{% set crs=course_map.get(a.course_id) %}<div class="list-item"><div><b>{{a.code}}</b><div class="muted">{{crs.title if crs else ('Course #' ~ a.course_id)}} · {{a.used_count}} / {{a.max_uses}}</div><small>{% if a.expires_at %}ينتهي {{a.expires_at.strftime('%Y-%m-%d %H:%M')}}{% else %}بدون انتهاء{% endif %}</small></div><form method="post" action="/admin/activation-codes/{{a.id}}/toggle"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn secondary">{{'إيقاف' if a.active else 'تفعيل'}}</button></form></div>{% else %}<div class="empty">لا توجد أكواد بعد.</div>{% endfor %}</div></div>
+{% endblock %}

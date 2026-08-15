@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block title %}{{homework.title}} | المستشار{% endblock %}{% block content %}
+<div class="page-head"><div><span class="eyebrow">واجب</span><h1>{{homework.title}}</h1><p class="muted">{{homework.instructions}}</p></div></div>
+<div class="card">{% if submission and submission.status == 'graded' %}<span class="badge success">تم التصحيح: {{submission.score|round}}/100</span><p><b>إجابة الطالب:</b></p><p>{{submission.answer_text}}</p><p><b>ملاحظات المدرس:</b> {{submission.feedback or '—'}}</p>{% else %}<form method="post"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>إجابتك</label><textarea name="answer_text" rows="10" required>{{submission.answer_text if submission else ''}}</textarea></div><button class="btn">تسليم الواجب</button></form>{% if submission %}<p class="muted">تم التسليم سابقًا ويمكنك تحديث الإجابة قبل التصحيح.</p>{% endif %}{% endif %}</div>
+{% endblock %}

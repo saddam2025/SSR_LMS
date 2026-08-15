@@ -1,0 +1,68 @@
+{% extends 'base.html' %}{% block title %}{{lesson.title}} | المستشار{% endblock %}{% block content %}
+<div class="page-head"><div><span class="eyebrow">درس محمي وتفاعلي</span><h1>{{lesson.title}}</h1><p class="muted">شاهد، اختبر فهمك أثناء الدرس، واسأل مساعد المستشار من نفس محتوى الدرس.</p></div><a class="btn ghost" href="/course/{{lesson.course_id}}">العودة للكورس</a></div>
+
+<div class="protected-shell lesson-experience" data-protected-content data-watermark="{{watermark}}" data-watermark-name="{{watermark_name}}" data-watermark-integrity="persistent-v40">
+  <div class="watermark dynamic-watermark" aria-hidden="true"><strong>{{watermark}}</strong><small>Ragab Seddik LMS • <span data-wm-time></span></small></div>
+  {% if lesson.video_url %}
+  <div class="video-box protected-media">
+    <div class="inline-actions" style="justify-content:space-between"><strong>المشغل المحمي</strong><div class="inline-actions"><span class="badge success">Secure Session</span>{% if video_profile %}<span class="badge {{'success' if video_profile.processing_status=='ready' else 'warn'}}">{{video_profile.provider|upper}} • {{video_profile.processing_status|upper}}</span>{% if video_profile.drm_mode!='none' %}<span class="badge">{{video_profile.drm_mode|upper}}</span>{% endif %}{% endif %}</div></div>
+    <p class="security-note">الفيديو داخل جلسة الحساب والعلامة المائية مرتبطة بالمستخدم والجلسة. نقاط التوقف التفاعلية تظهر أسفل المشغل.</p>
+    <div class="media-frame-wrap" data-video-watermark-zone>
+      <div class="video-user-watermark" data-video-watermark aria-hidden="true"><strong>{{watermark}}</strong><small>المستشار • <span data-video-wm-time></span></small></div>
+      {% set video_lower = lesson.video_url|lower %}
+      {% if video_profile and video_profile.provider == 'cloudflare' and stream_player_path %}
+        <iframe src="{{stream_player_path}}" width="100%" height="500" allow="encrypted-media; autoplay; picture-in-picture" referrerpolicy="strict-origin" title="مشغل Cloudflare Stream المحمي"></iframe>
+      {% elif video_profile and video_profile.provider == 'cloudflare' %}
+        <div class="empty">إعداد Cloudflare Stream غير مكتمل. تحقّق من رابط الفيديو وسر CF_EDGE_SIGNING_SECRET.</div>
+      {% elif ('.mp4' in video_lower or '.webm' in video_lower) and direct_video_proxy_enabled %}
+        <video id="lesson-video" data-lesson-video src="/protected/video/{{lesson.id}}?token={{video_token}}" {% if video_profile and video_profile.thumbnail_url %}poster="{{video_profile.thumbnail_url}}"{% endif %} controls playsinline preload="metadata" controlslist="nodownload noplaybackrate nofullscreen" disablepictureinpicture></video>
+      {% elif '.mp4' in video_lower or '.webm' in video_lower %}
+        <div class="empty">هذا الفيديو يحتاج نقله إلى مزود Streaming/DRM المعتمد قبل تشغيله في Production.</div>
+      {% else %}
+        <iframe src="{{lesson.video_url}}" width="100%" height="500" allow="encrypted-media; autoplay" referrerpolicy="no-referrer" title="مشغل الفيديو المحمي"></iframe>
+      {% endif %}
+    </div>
+    {% if video_profile and video_profile.duration_seconds %}<div class="video-meta-line"><span>المدة: {{video_profile.duration_seconds//60}}:{{'%02d'|format(video_profile.duration_seconds%60)}}</span><span>البث: {{video_profile.stream_type|upper}}</span></div>{% endif %}
+  </div>
+  {% endif %}
+  <div class="card lesson-body protected-document">{{lesson.body}}</div>
+  <div class="capture-overlay" aria-hidden="true">المحتوى محمي — التصوير أو إعادة النشر غير مصرح به</div>
+</div>
+
+{% if checkpoints %}
+<section id="interactive-checkpoints" class="section-block"><div class="section-title"><div><span class="eyebrow">توقفات داخل الفيديو</span><h2>اختبر نفسك على كل جزء</h2><p class="muted">في الفيديو المباشر يتم إيقاف المشغل عند نقطة السؤال. مع مشغلات الطرف الثالث استخدم التوقيت الموضح للمراجعة.</p></div><span class="badge">{{checkpoints|length}} سؤال</span></div>
+<div class="checkpoint-timeline">{% for cp in checkpoints %}{% set attempt = checkpoint_attempts.get(cp.id) if checkpoint_attempts else none %}<article id="checkpoint-{{cp.id}}" class="card checkpoint-card {% if attempt %}answered {{'correct' if attempt.is_correct else 'wrong'}}{% endif %}" data-checkpoint-id="{{cp.id}}" data-time="{{cp.timestamp_seconds}}" data-answered="{{'1' if attempt else '0'}}">
+  <div class="course-top"><span class="badge checkpoint-time">{{'%02d'|format(cp.timestamp_seconds//60)}}:{{'%02d'|format(cp.timestamp_seconds%60)}}</span>{% if attempt %}<span class="badge {{'success' if attempt.is_correct else 'warn'}}">{{'صحيح' if attempt.is_correct else 'راجع الجزء'}}</span>{% else %}<span class="badge">سؤال تفاعلي</span>{% endif %}</div>
+  <h3>{{cp.question}}</h3>
+  {% if user.role == 'student' %}<form method="post" action="/lesson/{{lesson.id}}/checkpoint/{{cp.id}}" class="checkpoint-form"><input type="hidden" name="csrf" value="{{csrf}}">
+    {% for key,label in [('A',cp.option_a),('B',cp.option_b),('C',cp.option_c),('D',cp.option_d)] %}<label class="option-row"><input type="radio" name="answer" value="{{key}}" required {% if attempt and attempt.answer==key %}checked{% endif %}><span>{{label}}</span></label>{% endfor %}
+    <button class="btn secondary small">{{'تحديث الإجابة' if attempt else 'تحقق الآن'}}</button>
+  </form>{% endif %}
+  {% if attempt %}<div class="checkpoint-feedback {{'ok' if attempt.is_correct else 'needs-review'}}"><b>{{'أحسنت — الإجابة صحيحة.' if attempt.is_correct else 'الإجابة تحتاج مراجعة.'}}</b>{% if cp.explanation %}<p>{{cp.explanation}}</p>{% endif %}{% if not attempt.is_correct %}<small>الإجابة الصحيحة: {% if cp.correct=='A' %}{{cp.option_a}}{% elif cp.correct=='B' %}{{cp.option_b}}{% elif cp.correct=='C' %}{{cp.option_c}}{% else %}{{cp.option_d}}{% endif %}</small>{% endif %}</div>{% endif %}
+</article>{% endfor %}</div></section>
+{% endif %}
+
+<a class="lesson-assistant-launch" href="#assistant-form"><span>🧠</span><div><b>مساعد المستشار</b><small>اسأل عن أي نقطة في هذا الدرس</small></div><strong>اسأل الآن ←</strong></a>
+
+<section id="study-assistant" class="section-block assistant-zone"><div class="section-title"><div><span class="eyebrow">مساعدك الذكي للمذاكرة</span><h2>اسأل من نفس محتوى الدرس وبحسب مستواك</h2><p class="muted">الإجابات هنا Grounded على شرح الدرس والواجب والـFlashcards والتفسيرات التي يضيفها مستر رجب صديق، ولا تعتمد على تخمين معلومات من خارج المحتوى.</p></div></div>
+<div class="study-tools-grid">
+  <a class="study-tool" href="#interactive-checkpoints"><span>🧪</span><b>اختبار على الدرس</b><small>أسئلة على أجزاء الفيديو مع نتيجة فورية.</small></a>
+  <a class="study-tool" href="#flashcards"><span>🗂️</span><b>Flash Cards</b><small>نقاط سريعة للمراجعة والتثبيت.</small></a>
+  <a class="study-tool" href="#assistant-form"><span>🧠</span><b>الدردشة مع المحتوى</b><small>اسأل عن نقطة في الشرح أو الواجب.</small></a>
+  <a class="study-tool" href="#homework-links"><span>⚡</span><b>التعلم النشط</b><small>انتقل بين الشرح والأسئلة والواجب بدل المشاهدة السلبية.</small></a>
+</div>
+<div class="assistant-suggestions" aria-label="أفكار للأسئلة"><span>جرّب تسأل:</span><button type="button" data-assistant-prompt="اشرح لي أهم فكرة في هذا الدرس بطريقة أبسط">اشرح أهم فكرة</button><button type="button" data-assistant-prompt="ما أكثر نقطة مهمة لازم أركز عليها قبل حل الواجب؟">قبل الواجب</button><button type="button" data-assistant-prompt="اعمل لي مراجعة سريعة لأهم نقاط الدرس">مراجعة سريعة</button></div>
+<form id="assistant-form" method="post" action="/lesson/{{lesson.id}}/assistant" class="card assistant-form"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>نوع المساعدة</label><select name="mode"><option value="explain">شرح مبسط حسب مستواي</option><option value="review">مراجعة مركزة</option><option value="practice">تدريب موجه</option><option value="homework">استعداد للواجب</option></select></div><div class="field"><label>ما الذي لم تفهمه؟</label><textarea name="question" required maxlength="1000" rows="3" placeholder="مثال: اشرح لي النقطة التي تتعلق بـ ... أو ساعدني أفهم سؤال الواجب">{{assistant_question}}</textarea></div><button class="btn">اسأل مساعد المستشار</button></form>
+{% if assistant_answer %}<article class="card assistant-answer"><div class="course-top"><span class="badge success">إجابة من محتوى الدرس</span><span class="muted">مساعد مذاكرة</span></div><div class="assistant-text">{{assistant_answer}}</div></article>{% endif %}
+</section>
+
+<section id="flashcards" class="section-block"><div class="section-title"><div><span class="eyebrow">Flash Cards</span><h2>راجع أهم النقاط بسرعة</h2></div></div>{% if flashcards %}<div class="flashcard-grid">{% for card in flashcards %}<details class="flashcard"><summary><span>بطاقة {{loop.index}}</span><b>{{card.front}}</b></summary><div>{{card.back}}</div></details>{% endfor %}</div>{% else %}<div class="empty">لم يضف المدرس Flash Cards لهذا الدرس بعد.</div>{% endif %}</section>
+
+{% if related_homework %}<section id="homework-links" class="section-block"><div class="section-title"><div><span class="eyebrow">الواجب المرتبط</span><h2>طبّق بعد الشرح</h2></div></div><div class="grid">{% for h in related_homework %}<article class="card"><h3>{{h.title}}</h3><p class="muted">{{h.instructions}}</p>{% if user.role=='student' %}<a class="btn secondary" href="/homework/{{h.id}}">فتح الواجب</a>{% endif %}</article>{% endfor %}</div></section>{% endif %}
+
+<section id="offline-viewing" class="section-block"><div class="card offline-card"><div><span class="eyebrow">مشاهدة بدون إنترنت داخل التطبيق</span><h2>نسخة Offline محمية — بدون ملف قابل للمشاركة</h2><p class="muted">المنصة تصدر ترخيصًا مرتبطًا بالحساب والجهاز، ولا ترسل رابط تنزيل خام. التشغيل الفعلي Offline يتطلب مزود فيديو/DRM يدعم Offline licenses في تطبيق Android/iPhone.</p></div><div class="offline-status">{% if offline_policy and offline_policy.enabled and offline_provider_ready %}<span class="badge success">جاهز من جهة المنصة</span><button class="btn secondary small" type="button" data-offline-grant data-lesson-id="{{lesson.id}}" data-csrf="{{csrf}}">طلب ترخيص Offline</button>{% elif offline_policy and offline_policy.enabled %}<span class="badge warn">السياسة مفعلة — مزود DRM غير مربوط</span>{% else %}<span class="badge">غير مفعّل لهذا الدرس</span>{% endif %}<div class="muted" data-offline-status></div></div></div></section>
+
+<div class="card" style="margin-top:16px"><div class="inline-actions" style="justify-content:space-between"><div><b>حالة الوصول</b><div class="muted">رمز المحتوى مؤقت ومرتبط بالجلسة.</div></div><a class="btn secondary small" href="/protected/lesson/{{lesson.id}}?token={{media_token}}">تحقق من الجلسة</a></div></div>
+<div class="section-title"><div><span class="eyebrow">ملفات الدرس</span><h2>المحتوى المحمي</h2></div></div><div class="grid">{% for a in assets %}<div class="card"><h3>{{a.original_name}}</h3><p class="muted">{{a.mime_type}} • وصول محمي</p><a class="btn secondary" target="_blank" rel="noopener" href="/protected/media/{{a.id}}">فتح المحتوى</a></div>{% else %}<div class="empty">لا توجد ملفات إضافية لهذا الدرس.</div>{% endfor %}</div>
+<section id="discussion" class="card" style="margin-top:24px"><span class="eyebrow">Q&A</span><h2>أسئلة ومناقشة الدرس</h2><form method="post" action="/lesson/{{lesson.id}}/discussion"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><textarea name="body" required maxlength="2000" placeholder="اكتب سؤالك أو ملاحظتك..."></textarea></div><button class="btn">نشر</button></form><div class="list" style="margin-top:16px">{% for p in discussion_posts %}<div class="list-item"><div><b>{{discussion_users[p.user_id].name if p.user_id in discussion_users else 'مستخدم'}}</b><div>{{p.body}}</div><small class="muted">{{p.created_at.strftime('%Y-%m-%d %H:%M')}}</small></div>{% if user.role in ['super_admin','admin','content_manager'] %}<form method="post" action="/admin/discussion/{{p.id}}/toggle"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn ghost small">إخفاء</button></form>{% endif %}</div>{% else %}<div class="empty">ابدأ أول سؤال في هذا الدرس.</div>{% endfor %}</div></section>
+<script src="/static/protected-content.js" defer></script><script src="/static/lesson-experience.js" defer></script>{% endblock %}

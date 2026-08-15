@@ -1,0 +1,45 @@
+{% extends 'admin_base.html' %}
+{% block title %}مركز إدارة الطلاب | المستشار{% endblock %}
+{% block page_label %}مركز إدارة الطلاب{% endblock %}
+{% block admin_content %}
+<section class="admin-page-head"><div><span class="eyebrow">UI V20</span><h1>مركز إدارة الطلاب المتقدم</h1><p>استيراد الطلاب من Excel/CSV، توزيعهم على المجموعات، إسناد الكورسات، وإجراء تعديلات جماعية من شاشة واحدة.</p></div><div class="inline-actions"><a class="btn ghost" href="/admin/groups">الصفوف والمجموعات</a><a class="btn ghost" href="/admin/reports">تقارير الأداء</a></div></section>
+<div class="admin-kpi-grid">
+  <article><small>إجمالي الطلاب</small><strong>{{student_total}}</strong></article>
+  <article><small>طلاب نشطون</small><strong>{{active_total}}</strong></article>
+  <article><small>داخل مجموعات</small><strong>{{grouped_total}}</strong></article>
+  <article><small>بدون مجموعة</small><strong>{{ungrouped_total}}</strong></article>
+</div>
+{% if import_summary %}<section class="admin-card"><h2>نتيجة آخر استيراد</h2><div class="admin-kpi-grid"><article><small>تم إنشاء</small><strong>{{import_summary.created}}</strong></article><article><small>تم تحديث</small><strong>{{import_summary.updated}}</strong></article><article><small>تم تخطي</small><strong>{{import_summary.skipped}}</strong></article></div>{% if import_summary.errors %}<div class="muted">{% for e in import_summary.errors %}<div>{{e}}</div>{% endfor %}</div>{% endif %}</section>{% endif %}
+<div class="admin-two-col">
+<section class="admin-card"><h2>استيراد Excel / CSV</h2><p class="muted">الأعمدة المدعومة: <b>name, email, phone, grade, school</b>. يمكن استخدام عناوين عربية مثل الاسم، البريد، الهاتف، الصف، المدرسة.</p>
+<form method="post" action="/admin/students/import" enctype="multipart/form-data" class="admin-form-grid">
+<input type="hidden" name="csrf" value="{{csrf}}"><label class="full">ملف الطلاب<input type="file" name="file" accept=".csv,.xlsx" required></label>
+<label>كلمة المرور الافتراضية<input type="password" name="default_password" minlength="12" required placeholder="حروف وأرقام - 12 حرفًا على الأقل"></label>
+<label>المجموعة الاختيارية<select name="group_id"><option value="0">بدون إسناد</option>{% for g in groups %}<option value="{{g.id}}">{{g.name}} — {{g.grade}}</option>{% endfor %}</select></label>
+<label>الكورس الاختياري<select name="course_id"><option value="0">بدون إسناد</option>{% for c in courses %}<option value="{{c.id}}">{{c.title}}</option>{% endfor %}</select></label>
+<button class="primary" type="submit">استيراد الطلاب</button></form></section>
+<section class="admin-card"><h2>قواعد الاستيراد</h2><div class="admin-list"><div class="admin-list-row"><div><strong>لا تكرار للبريد</strong><small>إذا كان البريد لطالب موجود، يتم تحديث الاسم والبيانات بدل إنشاء حساب مكرر.</small></div></div><div class="admin-list-row"><div><strong>إرث المجموعة</strong><small>إذا اخترت مجموعة، يرث الطالب تلقائيًا الكورسات المسندة لها.</small></div></div><div class="admin-list-row"><div><strong>حد آمن للملف</strong><small>حتى 5MB، ويدعم CSV UTF-8 وملفات XLSX.</small></div></div></div></section>
+</div>
+
+<form method="post" action="/admin/students/bulk" id="bulkForm">
+<input type="hidden" name="csrf" value="{{csrf}}">
+<section class="admin-card"><div class="admin-panel-head"><div><small>BULK ACTIONS</small><h2>عمليات جماعية</h2></div><span class="admin-count" id="selectedCount">0 محدد</span></div>
+<div class="admin-form-grid">
+<label>الإجراء<select name="action" id="bulkAction" required><option value="group">نقل إلى مجموعة</option><option value="course">إسناد كورس</option><option value="notify">إرسال إشعار</option><option value="activate">تفعيل الحسابات</option><option value="deactivate">إيقاف الحسابات</option></select></label>
+<label>المجموعة<select name="group_id"><option value="0">إزالة من المجموعة</option>{% for g in groups %}<option value="{{g.id}}">{{g.name}}</option>{% endfor %}</select></label>
+<label>الكورس<select name="course_id"><option value="0">اختر كورسًا</option>{% for c in courses %}<option value="{{c.id}}">{{c.title}}</option>{% endfor %}</select></label>
+<label>عنوان الإشعار<input name="title" maxlength="180" placeholder="مثال: تذكير مهم"></label>
+<label class="full">نص الإشعار<textarea name="body" rows="2" placeholder="يُستخدم عند اختيار إرسال إشعار"></textarea></label>
+<button class="primary" type="submit">تنفيذ على الطلاب المحددين</button></div></section></form>
+
+<section class="admin-card"><div class="admin-panel-head"><div><small>STUDENTS</small><h2>قائمة الطلاب</h2><small class="muted">عرض {{students|length}} من {{filtered_total}} نتيجة — 100 طالب كحد أقصى في الصفحة للحفاظ على سرعة لوحة الإدارة.</small></div><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="selectAll"> تحديد الصفحة</label></div>
+<form method="get" action="/admin/students" class="inline-actions" style="margin-bottom:14px"><input name="q" value="{{q}}" maxlength="120" placeholder="ابحث بالاسم أو البريد"><button class="btn secondary" type="submit">بحث</button>{% if q %}<a class="btn ghost" href="/admin/students">مسح البحث</a>{% endif %}</form>
+<div class="table-wrap"><table><tr><th></th><th>الطالب</th><th>الحالة</th><th>المجموعة</th><th>الكورسات الحالية</th><th>إجراء سريع</th><th>ملف 360°</th></tr>
+{% for s in students %}<tr><td><input class="student-check" type="checkbox" name="student_ids" value="{{s.id}}" form="bulkForm"></td><td><b>{{s.name}}</b><br><small class="muted">{{s.email}}</small>{% if profiles.get(s.id) and profiles[s.id].phone %}<br><small>{{profiles[s.id].phone}}</small>{% endif %}</td><td><span class="badge {{'success' if s.is_active else 'danger'}}">{{'نشط' if s.is_active else 'موقوف'}}</span></td><td>{% set gid=group_by_student.get(s.id) %}{% if gid and group_map.get(gid) %}<a href="/admin/groups/{{gid}}" class="badge">{{group_map[gid].name}}</a>{% else %}<span class="muted">بدون مجموعة</span>{% endif %}</td><td>{% set ns=namespace(found=false) %}{% for e in by_student.get(s.id,[]) %}{% if e.active %}{% set ns.found=true %}{% for c in courses %}{% if c.id==e.course_id %}<span class="badge">{{c.title}}</span>{% endif %}{% endfor %}{% endif %}{% endfor %}{% if not ns.found %}<span class="muted">لا يوجد</span>{% endif %}</td><td><div class="inline-actions"><form method="post" action="/admin/students/{{s.id}}/enroll"><input type="hidden" name="csrf" value="{{csrf}}"><select name="course_id" style="min-width:150px">{% for c in courses %}<option value="{{c.id}}">{{c.title}}</option>{% endfor %}</select><button class="btn secondary small">إسناد</button></form><form method="post" action="/admin/students/{{s.id}}/toggle"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn {{'ghost' if s.is_active else 'secondary'}} small">{{'إيقاف' if s.is_active else 'تفعيل'}}</button></form></div></td><td><a class="btn ghost small" href="/admin/students/{{s.id}}">فتح الملف</a></td></tr>{% else %}<tr><td colspan="7">لا توجد حسابات طلاب.</td></tr>{% endfor %}</table></div>
+{% if pages > 1 %}<nav class="inline-actions" aria-label="صفحات الطلاب" style="margin-top:16px">
+{% if page > 1 %}<a class="btn ghost" href="/admin/students?page={{page-1}}{% if q %}&q={{q|urlencode}}{% endif %}">السابق</a>{% endif %}
+<span class="badge">صفحة {{page}} من {{pages}}</span>
+{% if page < pages %}<a class="btn ghost" href="/admin/students?page={{page+1}}{% if q %}&q={{q|urlencode}}{% endif %}">التالي</a>{% endif %}
+</nav>{% endif %}
+</section>
+{% endblock %}

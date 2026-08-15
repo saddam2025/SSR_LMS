@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block title %}التحقق بخطوتين | المستشار{% endblock %}{% block content %}
+<div class="auth-shell"><div class="auth-card"><span class="eyebrow">SECURITY</span><h1>التحقق بخطوتين</h1><p class="muted">أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة.</p>{% if error %}<div class="alert danger">{{error}}</div>{% endif %}<form method="post" action="/mfa"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>رمز التحقق</label><input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></div><button class="btn" style="width:100%">تحقق</button></form></div></div>
+{% endblock %}

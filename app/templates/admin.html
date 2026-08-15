@@ -1,0 +1,67 @@
+{% extends 'admin_base.html' %}
+{% block title %}لوحة القيادة اليومية | المستشار{% endblock %}
+{% block page_label %}لوحة القيادة اليومية{% endblock %}
+{% block admin_content %}
+<div class="admin-page-head"><div><span class="eyebrow">UI V31 • DAILY COMMAND CENTER</span><h1>صباح المتابعة يا {{user.name}}</h1><p>كل ما يحتاج قرارًا اليوم في منصة المستشار: الطلاب، التصحيح، الحصص، الاشتراكات، الإيرادات والدعم.</p></div><div class="inline-actions"><a class="btn secondary" href="/teacher/content">مركز المحتوى</a><a class="btn" href="/admin/communications">إرسال تنبيه</a></div></div>
+
+<div class="daily-focus-grid">
+  <a class="daily-focus danger" href="/admin/reports?risk=high"><span>طلاب يحتاجون تدخلًا</span><strong>{{at_risk_students|length}}</strong><small>افتح الحالات عالية الخطورة الآن ←</small></a>
+  <a class="daily-focus warning" href="/teacher/assessment"><span>تصحيح منتظر</span><strong>{{stats.pending_homework}}</strong><small>تسليمات بلا درجة ←</small></a>
+  <a class="daily-focus info" href="/admin/live-classes"><span>حصص قادمة</span><strong>{{upcoming_classes|length}}</strong><small>راجع الجدول والبث ←</small></a>
+  <a class="daily-focus warning" href="/admin/commerce"><span>اشتراكات تنتهي خلال 7 أيام</span><strong>{{stats.expiring_subscriptions}}</strong><small>متابعة التجديد ←</small></a>
+  <a class="daily-focus success" href="/admin/commerce"><span>إيراد اليوم</span><strong>{{'%.0f'|format(stats.revenue_today)}}</strong><small>ج.م • آخر 30 يوم {{'%.0f'|format(stats.revenue_30)}} ج.م</small></a>
+  <a class="daily-focus info" href="/support"><span>تذاكر مفتوحة</span><strong>{{stats.open_tickets}}</strong><small>الدعم الذي يحتاج ردًا ←</small></a>
+</div>
+
+<div class="admin-command-strip">
+  <div><span>حالة اليوم</span><strong>{% if at_risk_students or stats.pending_homework or stats.open_tickets %}توجد مهام تحتاج متابعة{% else %}اليوم تحت السيطرة{% endif %}</strong><small>{{stats.students}} طالب نشط • {{stats.subscriptions}} اشتراك نشط • {{stats.sessions}} جلسة متصلة</small></div>
+  <a href="/admin/system-status"><b>حالة النظام</b><small>الجاهزية والتكاملات ←</small></a>
+  <a href="/admin/security"><b>الأمان</b><small>{{stats.sessions}} جلسة نشطة • مراجعة الأجهزة ←</small></a>
+  <a href="/admin/communications"><b>التواصل</b><small>تنبيه صف أو كورس أو طلاب متأخرين ←</small></a>
+</div>
+
+<div class="daily-dashboard-grid">
+<section class="admin-panel priority-panel"><div class="admin-panel-head"><div><small>STUDENT PRIORITY</small><h2>الطلاب الأكثر احتياجًا للتدخل</h2></div><a class="admin-text-link" href="/admin/reports?risk=high">التقرير الكامل ←</a></div>
+  <div class="daily-list">{% for r in at_risk_students %}<a href="/admin/students/{{r.student.id}}"><div><b>{{r.student.name}}</b><small>{{r.profile.grade if r.profile else 'طالب'}} • {{'، '.join(r.signals[:2]) if r.signals else 'يحتاج متابعة'}}</small></div><span class="risk-badge high">{{'%.0f'|format(r.progress_avg)}}% تقدم</span></a>{% else %}<div class="empty">لا توجد حالات عالية الخطورة حاليًا.</div>{% endfor %}</div>
+</section>
+
+<section class="admin-panel"><div class="admin-panel-head"><div><small>GRADING QUEUE</small><h2>طابور التصحيح</h2></div><a class="admin-text-link" href="/teacher/assessment">مركز التقييم ←</a></div>
+  <div class="daily-list">{% for x in pending_submissions %}<a href="/teacher/assessment"><div><b>{{submission_student_map.get(x.student_id).name if submission_student_map.get(x.student_id) else 'طالب'}}</b><small>{{submission_homework_map.get(x.homework_id).title if submission_homework_map.get(x.homework_id) else 'واجب'}} • {{x.submitted_at.strftime('%Y-%m-%d %H:%M')}}</small></div><span class="badge warn">بانتظار التصحيح</span></a>{% else %}<div class="empty">لا توجد تسليمات تنتظر التصحيح.</div>{% endfor %}</div>
+</section>
+
+<section class="admin-panel"><div class="admin-panel-head"><div><small>NEXT LIVE CLASSES</small><h2>الحصص القادمة</h2></div><a class="admin-text-link" href="/admin/live-classes">الجدول الكامل ←</a></div>
+  <div class="daily-list">{% for x in upcoming_classes %}<a href="/admin/live-classes/{{x.id}}"><div><b>{{x.title}}</b><small>{{class_courses.get(x.course_id).title if class_courses.get(x.course_id) else 'كورس'}} • {{x.scheduled_at.strftime('%Y-%m-%d %H:%M')}}</small></div><span class="badge success">{{x.duration_minutes}} دقيقة</span></a>{% else %}<div class="empty">لا توجد حصص قادمة.</div>{% endfor %}</div>
+</section>
+
+<section class="admin-panel"><div class="admin-panel-head"><div><small>EXPIRING SOON</small><h2>اشتراكات قريبة من الانتهاء</h2></div><a class="admin-text-link" href="/admin/commerce">المبيعات والاشتراكات ←</a></div>
+  <div class="daily-list">{% for x in expiring %}<a href="/admin/commerce"><div><b>{{expiring_users.get(x.user_id).name if expiring_users.get(x.user_id) else 'طالب'}}</b><small>{{expiring_courses.get(x.course_id).title if expiring_courses.get(x.course_id) else 'كورس'}}</small></div><span class="badge warn">{{x.ends_at.strftime('%Y-%m-%d')}}</span></a>{% else %}<div class="empty">لا توجد اشتراكات تنتهي خلال 7 أيام.</div>{% endfor %}</div>
+</section>
+
+<section class="admin-panel"><div class="admin-panel-head"><div><small>SUPPORT & MESSAGES</small><h2>الدعم والتنبيهات</h2></div><a class="admin-text-link" href="/support">فتح الدعم ←</a></div>
+  <div class="daily-list">{% for x in urgent_tickets %}<a href="/support/tickets/{{x.id}}"><div><b>{{x.subject}}</b><small>{{ticket_users.get(x.user_id).name if ticket_users.get(x.user_id) else 'مستخدم'}} • {{x.category}}</small></div><span class="risk-badge {{'high' if x.priority in ['urgent','high'] else 'medium'}}">{{x.priority}}</span></a>{% else %}<div class="empty">لا توجد تذاكر مفتوحة.</div>{% endfor %}</div>
+  {% if recent_campaigns %}<div class="daily-campaigns"><small>آخر الحملات</small>{% for c in recent_campaigns[:3] %}<span>{{c.title}} • {{c.recipient_count}} مستلم</span>{% endfor %}</div>{% endif %}
+</section>
+
+<section class="admin-panel"><div class="admin-panel-head"><div><small>FOLLOW-UP</small><h2>طلاب يحتاجون متابعة خفيفة</h2></div><a class="admin-text-link" href="/admin/reports?risk=medium">عرض الكل ←</a></div>
+  <div class="daily-list">{% for r in followup_students %}<a href="/admin/students/{{r.student.id}}"><div><b>{{r.student.name}}</b><small>{{'، '.join(r.signals[:2]) if r.signals else 'متابعة الأداء'}}</small></div><span class="risk-badge medium">{{'%.0f'|format(r.quiz_avg)}}% اختبارات</span></a>{% else %}<div class="empty">لا توجد حالات متابعة حاليًا.</div>{% endfor %}</div>
+</section>
+</div>
+
+<div class="stats-grid admin-kpi-grid admin-secondary-kpis">
+  <div class="card stat-card"><div class="stat-label">الطلاب النشطون</div><div class="stat">{{stats.students}}</div><div class="stat-sub">حسابات فعالة</div></div>
+  <div class="card stat-card"><div class="stat-label">الاشتراكات النشطة</div><div class="stat">{{stats.subscriptions}}</div><div class="stat-sub">وصول مدفوع/مفعّل</div></div>
+  <div class="card stat-card"><div class="stat-label">الإيراد الإجمالي</div><div class="stat">{{'%.0f'|format(stats.paid_revenue)}}</div><div class="stat-sub">جنيه مصري</div></div>
+  <div class="card stat-card"><div class="stat-label">مدفوعات معلقة</div><div class="stat">{{stats.pending_payments}}</div><div class="stat-sub">تحتاج مراجعة</div></div>
+  <div class="card stat-card"><div class="stat-label">الكورسات</div><div class="stat">{{stats.courses}}</div><div class="stat-sub">محتوى المنصة</div></div>
+  <div class="card stat-card"><div class="stat-label">الدروس</div><div class="stat">{{stats.lessons}}</div><div class="stat-sub">دروس مسجلة</div></div>
+</div>
+
+<div class="admin-dashboard-grid">
+<section class="admin-panel"><div class="admin-panel-head"><div><small>RECENT COURSES</small><h2>آخر الكورسات</h2></div><a class="admin-text-link" href="/admin/courses">عرض الكل ←</a></div>
+  <div class="table-wrap"><table><tr><th>الكورس</th><th>الصف</th><th>السعر</th><th>الحالة</th><th></th></tr>{% for c in courses[:6] %}<tr><td><b>{{c.title}}</b></td><td>{{c.grade}}</td><td>{{'%.0f'|format(c.price)}} ج.م</td><td><span class="badge {{'success' if c.published else 'warn'}}">{{'منشور' if c.published else 'مسودة'}}</span></td><td><a class="btn ghost small" href="/admin/course/{{c.id}}">إدارة</a></td></tr>{% else %}<tr><td colspan="5">لا توجد كورسات بعد.</td></tr>{% endfor %}</table></div>
+</section>
+<aside class="admin-panel"><div class="admin-panel-head"><div><small>QUICK ACTIONS</small><h2>إجراءات سريعة</h2></div></div><div class="admin-quick-actions"><a href="/teacher/content"><span>▦</span><div><b>مركز المحتوى</b><small>الوحدات والدروس والاختبارات</small></div></a><a href="/teacher/assessment"><span>✓</span><div><b>التقييم والتصحيح</b><small>الواجبات والدرجات</small></div></a><a href="/admin/students"><span>♙</span><div><b>الطلاب</b><small>الحسابات والمجموعات</small></div></a><a href="/admin/commerce"><span>◫</span><div><b>المبيعات</b><small>المدفوعات والاشتراكات</small></div></a><a href="/admin/communications"><span>✉</span><div><b>إرسال تنبيه</b><small>صف أو كورس أو حالات متابعة</small></div></a><a href="/admin/security"><span>◆</span><div><b>الأمان</b><small>الأجهزة والجلسات</small></div></a></div></aside>
+</div>
+
+<section class="admin-panel"><div class="admin-panel-head"><div><small>AUDIT TRAIL</small><h2>آخر أحداث النظام</h2></div><a class="admin-text-link" href="/admin/security">مركز الأمان ←</a></div><div class="list">{% for l in logs[:8] %}<div class="list-item"><div class="list-main"><div class="list-icon">#{{l.id}}</div><div><b>{{l.action}}</b><div class="muted">{{l.created_at}} • {{l.ip}}</div></div></div></div>{% else %}<div class="empty">لا توجد سجلات بعد.</div>{% endfor %}</div></section>
+{% endblock %}

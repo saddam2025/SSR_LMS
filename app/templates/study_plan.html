@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block title %}خطة مذاكرتي | المستشار{% endblock %}{% block content %}
+<div class="page-head"><div><span class="eyebrow">TODAY</span><h1>ماذا أذاكر اليوم؟</h1><p class="muted">خطة تلقائية مبنية على الدروس والواجبات غير المكتملة.</p></div><div><span class="badge success">{{points}} نقطة</span> <span class="badge">{{level}}</span></div></div>
+<div class="list">{% for t in tasks %}<a class="list-item" href="{{t.url}}"><div><b>{{t.title}}</b><div class="muted">{{t.course}} • {{'درس' if t.kind=='lesson' else 'واجب'}}</div></div><span class="btn small">ابدأ</span></a>{% else %}<div class="empty">أحسنت! لا توجد مهام معلقة حاليًا.</div>{% endfor %}</div>
+{% endblock %}

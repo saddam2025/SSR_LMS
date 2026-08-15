@@ -1,0 +1,29 @@
+{% extends "admin_base.html" %}
+{% block title %}الصفوف والمجموعات | المستشار{% endblock %}
+{% block page_label %}الصفوف والمجموعات{% endblock %}
+{% block admin_content %}
+<section class="admin-page-head"><div><span class="eyebrow">UI V19</span><h1>إدارة الصفوف والمجموعات</h1><p>قسّم الطلاب إلى مجموعات، اربط الكورسات والجداول، وانقل الطلاب بسهولة بدون التأثير على اشتراكاتهم القديمة.</p></div></section>
+<div class="admin-kpi-grid">
+  <article><small>إجمالي المجموعات</small><strong>{{groups|length}}</strong></article>
+  <article><small>طلاب بدون مجموعة</small><strong>{{ungrouped}}</strong></article>
+  <article><small>المجموعات النشطة</small><strong>{{groups|selectattr('active')|list|length}}</strong></article>
+</div>
+<div class="admin-two-col">
+  <section class="admin-card"><h2>إنشاء مجموعة جديدة</h2>
+    <form method="post" action="/admin/groups/create" class="admin-form-grid">
+      <input type="hidden" name="csrf" value="{{csrf}}">
+      <label>اسم المجموعة<input name="name" required maxlength="120" placeholder="مثال: 3 ثانوي - مجموعة A"></label>
+      <label>الصف<input name="grade" maxlength="80" placeholder="الصف الثالث الثانوي"></label>
+      <label class="full">وصف مختصر<textarea name="description" rows="3"></textarea></label>
+      <button class="primary" type="submit">إنشاء المجموعة</button>
+    </form>
+  </section>
+  <section class="admin-card"><h2>المجموعات الحالية</h2>
+    <div class="admin-list">
+      {% for g in groups %}
+      <a class="admin-list-row" href="/admin/groups/{{g.id}}"><div><strong>{{g.name}}</strong><small>{{g.grade or 'بدون صف محدد'}} · {{counts.get(g.id,0)}} طالب · {{course_counts.get(g.id,0)}} كورس</small></div><span>إدارة ←</span></a>
+      {% else %}<p class="muted">لا توجد مجموعات بعد.</p>{% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

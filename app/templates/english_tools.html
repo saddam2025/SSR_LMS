@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block content %}
+<div class="hero"><h1>English Power Center</h1><p>مركز المستشار الذكي للمفردات والمراجعة المتباعدة والنطق.</p></div>
+<div class="grid"><div class="card"><h3>🔥 Streak</h3><p><b>{{ streak.current_days }}</b> يوم متتالي · الأفضل {{ streak.best_days }}</p></div><div class="card"><h3>⭐ XP</h3><p><b>{{ points }}</b> نقطة</p></div><div class="card"><h3>🧠 Spaced Repetition</h3><p>{{ due|length }} كلمة جاهزة للمراجعة</p></div></div>
+<h2>Vocabulary & Flashcards</h2>
+{% for item, review in due %}<div class="card" style="margin-bottom:14px"><h2>{{ item.word }}</h2><p>{{ item.phonetic }}</p><p><b>{{ item.meaning_ar }}</b></p><p>{{ item.example }}</p>{% if item.audio_us_url %}<audio controls src="{{ item.audio_us_url }}"></audio>{% endif %}{% if item.audio_uk_url %}<audio controls src="{{ item.audio_uk_url }}"></audio>{% endif %}<form method="post" action="/english-tools/review/{{ item.id }}"><input type="hidden" name="csrf" value="{{ csrf }}"><button name="result" value="correct">عرفتها ✓</button> <button name="result" value="wrong">راجعها مرة أخرى</button></form></div>{% else %}<div class="card">لا توجد كلمات للمراجعة الآن. أضف مفردات من لوحة الإدارة.</div>{% endfor %}
+{% endblock %}

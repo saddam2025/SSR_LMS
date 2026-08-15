@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block title %}الدخول برمز OTP | المستشار{% endblock %}{% block content %}
+<div class="form-card"><span class="eyebrow">OTP LOGIN</span><h2>الدخول برقم الهاتف</h2>{% if error %}<div class="error">{{error}}</div>{% endif %}
+{% if step=='request' %}<form method="post" action="/otp-login/request"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>رقم الهاتف المسجل</label><input name="phone" required inputmode="tel"></div><button class="btn" style="width:100%">إرسال رمز التحقق</button></form>
+{% else %}<form method="post" action="/otp-login/verify"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>رمز التحقق المكون من 6 أرقام</label><input name="code" required inputmode="numeric" maxlength="6"></div><button class="btn" style="width:100%">تحقق ودخول</button></form>{% if dev_code %}<div class="form-note">رمز بيئة التطوير: <b>{{dev_code}}</b> — لا يظهر هذا في Production.</div>{% endif %}{% endif %}
+</div>{% endblock %}

@@ -1,0 +1,9 @@
+{
+  "timestamp": 0,
+  "go": false,
+  "summary": "Replace with Paymob Test Mode payment result",
+  "payment_success": false,
+  "webhook_verified": false,
+  "subscription_activated": false,
+  "notes": "Do not store card data, API keys, HMAC secrets, or full webhook payloads."
+}

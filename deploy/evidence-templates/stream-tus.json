@@ -1,0 +1,9 @@
+{
+  "timestamp": 0,
+  "go": false,
+  "summary": "Replace with real staging Stream/TUS test result",
+  "upload_resumable": false,
+  "playback_ok": false,
+  "authorization_ok": false,
+  "notes": "Do not place tokens or signed URLs in this file."
+}

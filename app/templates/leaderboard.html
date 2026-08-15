@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block title %}لوحة المتصدرين | المستشار{% endblock %}{% block content %}
+<div class="page-head"><div><span class="eyebrow">GAMIFICATION</span><h1>لوحة المتصدرين</h1><p class="muted">النقاط تُكتسب بالتعلم والواجبات والاختبارات، وليست بعدد مرات الدخول.</p></div></div>
+<table><tr><th>#</th><th>الطالب</th><th>النقاط</th></tr>{% for r in rows %}<tr><td>{{loop.index}}</td><td>{{r.name}}</td><td><b>{{r.pts}}</b></td></tr>{% endfor %}</table>
+{% endblock %}
