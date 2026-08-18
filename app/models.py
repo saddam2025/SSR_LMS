@@ -37,7 +37,7 @@ class Course(Base):
 class CourseAcademicPeriod(Base):
     __tablename__ = "course_academic_periods"
     __table_args__ = (UniqueConstraint("course_id", name="uq_course_academic_period_course"),)
-     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
     academic_year: Mapped[str] = mapped_column(String(20), default="2026/2027", index=True)
     term: Mapped[str] = mapped_column(String(30), default="الترم الأول", index=True)
