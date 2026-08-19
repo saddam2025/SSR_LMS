@@ -22,7 +22,6 @@ from .models import (
     LessonCheckpoint, CheckpointAttempt, LessonFlashcard, StudyAssistantLog, OfflineLessonPolicy, OfflineGrant, CourseCategory, CourseCategoryAssignment, SupportTicket, SupportTicketMessage, LessonVideoProfile, QuestionBankItem, QuizQuestionSetting, CommunicationCampaign, CommunicationDelivery, StudentAttendance, LiveClass, LiveClassAttendance, StudentGroup, StudentGroupMembership, GroupCourseAssignment, GroupLiveClassAssignment, ContentUnit, LessonUnitAssignment, QuizUnitAssignment, HomeworkUnitAssignment, CourseAcademicPeriod, ContentSchedule, LessonDripRule, LessonAccessOverride, CourseCompletionPolicy, CourseCertificate, RevisionPlan, RevisionTask, RevisionTaskProgress, QuestionBankTaxonomy, QuestionTaxonomy, MockExamProfile, MockExamAttemptAnalysis, StudentRemediationPlan, StudentRemediationItem, PushDevice, HomepageFeature, HomepageReel, HomepageHonor, HomepageReview
 )
 from .payment import create_intention, configured as paymob_configured, merchant_reference, verify_transaction_hmac
-from .storage import save_upload_file, presigned_get, read_private_bytes
 from .cloudflare_stream import extract_stream_uid, stream_edge_ready, stream_embed_path
 from .cloudflare_upload import (
     StreamUploadError, create_tus_upload, enforce_signed_video,
@@ -218,14 +217,11 @@ async def security_headers(request: Request, call_next):
     frame_sources = " ".join(["'self'", *[f"https://{h}" for h in video_hosts], *[f"https://*.{h}" for h in video_hosts]]) if video_hosts else ("'self'" if IS_PRODUCTION else "'self' https:")
     resource_sources = " ".join(["'self'", *[f"https://{h}" for h in video_hosts], *[f"https://*.{h}" for h in video_hosts]]) if video_hosts else "'self'"
     connect_sources = ["'self'", "https://upload.videodelivery.net", "https://*.upload.videodelivery.net"]
-    # Direct-to-R2 protected media uploads use a presigned PUT from the browser.
-    # CSP must permit only the configured private-storage endpoint; opening connect-src
-    # to arbitrary HTTPS hosts would weaken the XSS/data-exfiltration boundary.
-    s3_endpoint = os.getenv("S3_ENDPOINT_URL", "").strip()
-    if s3_endpoint:
-        parsed_s3 = urlparse(s3_endpoint)
-        if parsed_s3.scheme == "https" and parsed_s3.hostname:
-            connect_sources.append(f"https://{parsed_s3.hostname}")
+    # NOTE: direct-to-storage presigned uploads (R2/S3) were removed along with
+    # presigned_get; protected uploads now stream through save_upload_file on the
+    # local Railway volume, so no extra connect-src entry for a storage endpoint
+    # is required here. If S3_ENDPOINT_URL-based presigned PUT is reintroduced,
+    # add the endpoint host back to connect_sources at that time.
     response.headers["Content-Security-Policy"] = (
         f"default-src 'self'; img-src {resource_sources} data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; "
         f"script-src 'self'; frame-src {frame_sources}; media-src {resource_sources} blob:; "
@@ -334,60 +330,7 @@ def _safe_live_url(value: str, provider: str = "custom") -> str:
         raise HTTPException(400, "رابط الحصة لا يطابق المزود المحدد")
     return clean
 
-
-
-
-
-
-
-
-
-
-
 GRADE_ORDER = ["الصف الأول الثانوي", "الصف الثاني الثانوي عام", "الصف الثاني بكالوريا", "الصف الثالث الثانوي"]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def _lesson_access_state(db: Session, user: User, lesson: Lesson, now: datetime | None = None) -> dict:
     return access_lesson_access_state(db, user, lesson, now)
@@ -482,93 +425,11 @@ def _student_last_activity_map(db: Session):
 def _student_weekly_attendance(db: Session, user_id: int, days: int = 7):
     return service_student_weekly_attendance(db, user_id, days)
 
-
-
-
-
-
-
-
-
-
 def _student_live_classes(db: Session, user_id: int, days_before: int = 7, days_after: int = 21, course_ids: list[int] | None = None):
     return service_student_live_classes(db, user_id, days_before, days_after, course_ids)
 
-
-
-
-
-
-
-
-
-
-
-
-# --- UI V19: groups / cohorts ---
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def _student_performance_rows(db: Session):
     return service_student_performance_rows(db)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 app.state.resolve_user = current_user
 # V64 router migration bridge. Shared web helpers stay centralized while route
@@ -609,10 +470,3 @@ app.include_router(certificates_router)
 app.include_router(english_tools_router)
 app.include_router(discussion_admin_router)
 app.include_router(learning_runtime_router)
-
-
-
-
-
-
-
