@@ -1,8 +1,9 @@
 
 import os, re, hmac, hashlib
 from fastapi.testclient import TestClient
-import app.main as mainmod
 from app.main import app
+import app.services.auth as authmod
+from fastapi import HTTPException
 from app.seed import run
 from app.db import SessionLocal
 from app.models import User, OTPChallenge
@@ -49,20 +50,20 @@ assert not verify_transaction_hmac(obj,"bad")
 # OTP delivery failure must invalidate the generated challenge.
 db=SessionLocal()
 u=db.query(User).filter_by(email="student@ragab-seddik.local").first()
-orig=mainmod._send_otp
+orig=authmod._send_otp
 def fail(*args,**kwargs):
-    raise mainmod.HTTPException(503,"sms down")
-mainmod._send_otp=fail
+    raise HTTPException(503,"sms down")
+authmod._send_otp=fail
 try:
     try:
-        mainmod.create_otp(db,u,"01060309494","login")
+        authmod.create_otp(db,u,"01060309494","login")
         raise AssertionError("expected failure")
-    except mainmod.HTTPException as e:
+    except HTTPException as e:
         assert e.status_code==503
     ch=db.query(OTPChallenge).filter_by(user_id=u.id,purpose="login").order_by(OTPChallenge.id.desc()).first()
     assert ch is not None and ch.used_at is not None
 finally:
-    mainmod._send_otp=orig
+    authmod._send_otp=orig
     db.close()
 
 print("LIVE INTEGRATIONS REGRESSION OK")

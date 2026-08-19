@@ -126,9 +126,9 @@ nav{display:flex;align-items:center;gap:5px;flex-wrap:wrap}nav a{color:#eef5ff;t
 /* FINAL 2026 UI TYPOGRAPHY + PRIVATE DASHBOARD REFRESH
    Typography uses Cairo with safe local fallbacks. The dashboard is a custom implementation
    that follows the clean, spacious educational SaaS direction requested by the platform owner. */
-html,body,button,input,select,textarea{font-family:"Cairo","Segoe UI",Arial,Tahoma,sans-serif!important}
+html,body,button,input,select,textarea{font-family:"Tajawal","Cairo","Segoe UI",Arial,Tahoma,sans-serif!important}
 body{font-weight:500;letter-spacing:0}
-h1,h2,h3,h4,h5,h6,.brand,.ww-brand-text strong,.wael-grade-index,.stat,.btn,.ww-solid-btn,.ww-outline-btn{font-family:"Cairo","Segoe UI",Arial,Tahoma,sans-serif!important}
+h1,h2,h3,h4,h5,h6,.brand,.ww-brand-text strong,.wael-grade-index,.stat,.btn,.ww-solid-btn,.ww-outline-btn{font-family:"Cairo","Tajawal","Segoe UI",Arial,Tahoma,sans-serif!important;letter-spacing:-.15px}
 h1,h2,h3,h4{font-weight:800;letter-spacing:-.025em}
 .wael-hero h1{font-weight:900;letter-spacing:-.045em;line-height:1.35}.wael-lead{font-weight:500;line-height:2}.ww-desktop-nav a,.ww-desktop-nav summary{font-weight:700}.ww-brand-text small,.wael-brandline,.wael-section-kicker{letter-spacing:.02em}
 
@@ -159,8 +159,9 @@ h1,h2,h3,h4{font-weight:800;letter-spacing:-.025em}
 /* Official community links: lightweight, no embedded social widgets */
 .official-community{display:flex;flex-direction:column;gap:.45rem}
 .grade-community{max-width:1180px;margin:2rem auto;padding:1.25rem}
-.grade-community-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.grade-community-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
 .grade-community-grid a{display:flex;flex-direction:column;gap:.35rem;padding:1rem;border:1px solid rgba(0,0,0,.1);border-radius:16px;text-decoration:none}
+@media(max-width:1024px){.grade-community-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.grade-community-grid{grid-template-columns:1fr}}
 
 .ticket-row{display:flex;justify-content:space-between;gap:1rem;padding:.9rem 1rem;border:1px solid rgba(0,0,0,.08);border-radius:14px;margin:.55rem 0;text-decoration:none}
@@ -224,3 +225,6 @@ h1,h2,h3,h4{font-weight:800;letter-spacing:-.025em}
 
 /* V57 resilient lecture and attachment uploads */
 .stream-upload-panel .upload-drop-card{border-color:#7ea8d5!important}.upload-notice{display:flex;gap:10px;align-items:center;padding:13px 16px;border-radius:14px;margin:0 0 18px}.upload-notice.success{background:#edf9f3;border:1px solid #b8e1ca;color:#145f39}.upload-notice span{font-size:12px}.upload-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;margin:14px 0}.upload-progress>div{height:12px;border-radius:999px;background:#e5ebf2;overflow:hidden}.upload-progress span{display:block;width:0;height:100%;background:linear-gradient(90deg,#0e4f97,#27a879);transition:width .15s;border-radius:999px}.upload-progress b{min-width:44px;text-align:left;color:#0e4f97}.upload-message{display:flex;gap:8px;align-items:flex-start;margin:12px 0;padding:12px 14px;border-radius:12px;background:#eef5fd;border:1px solid #cbdcf0;color:#214b78;font-size:12px;line-height:1.7}.upload-message[data-kind=success]{background:#edf9f3;border-color:#b8e1ca;color:#145f39}.upload-message[data-kind=error]{background:#fff0f1;border-color:#efc2c7;color:#92283a}.stream-current-video{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:12px}.stream-current-video div{display:grid;gap:4px}.stream-current-video small{color:#718096}.stream-upload-panel input[type=file]{min-height:58px}@media(max-width:640px){.stream-current-video,.upload-notice{align-items:flex-start;flex-direction:column}.stream-current-video button{width:100%}}
+
+
+.compact-edit{margin-top:12px;min-width:min(620px,80vw);padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}.inline-actions details>summary{list-style:none;cursor:pointer}.inline-actions details>summary::-webkit-details-marker{display:none}@media(max-width:760px){.compact-edit{min-width:min(86vw,520px)}}

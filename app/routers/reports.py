@@ -10,13 +10,23 @@ from ..services.reports import student_performance_rows, build_xlsx, pdf_arabic
 router = APIRouter()
 
 @router.get('/admin/reports', response_class=HTMLResponse)
-def admin_student_reports(request: Request, risk: str='all', db: Session=Depends(get_db)):
+def admin_student_reports(request: Request, risk: str='all', page: int=1, page_size: int=100, db: Session=Depends(get_db)):
     require_role(request, db, 'super_admin','admin','content_manager','support')
+    # Compute the report dataset once, but never render thousands of table rows into
+    # a single HTML response. Large DOMs were the main browser-side bottleneck as
+    # student counts grew. Full Excel/PDF exports remain available on demand.
     rows=student_performance_rows(db)
     if risk in {'high','medium','low'}: rows=[r for r in rows if r['risk']==risk]
+    elif risk != 'all': risk='all'
     quiz_rows=[r for r in rows if r['quiz_count']]
-    summary={'students':len(rows),'high':sum(1 for r in rows if r['risk']=='high'),'medium':sum(1 for r in rows if r['risk']=='medium'),'avg_progress':round(sum(r['progress_avg'] for r in rows)/len(rows),1) if rows else 0,'avg_quiz':round(sum(r['quiz_avg'] for r in quiz_rows)/len(quiz_rows),1) if quiz_rows else 0}
-    return render_template('admin_reports.html', template_context(request,db,rows=rows,summary=summary,risk_filter=risk))
+    total_filtered=len(rows)
+    summary={'students':total_filtered,'high':sum(1 for r in rows if r['risk']=='high'),'medium':sum(1 for r in rows if r['risk']=='medium'),'avg_progress':round(sum(r['progress_avg'] for r in rows)/total_filtered,1) if total_filtered else 0,'avg_quiz':round(sum(r['quiz_avg'] for r in quiz_rows)/len(quiz_rows),1) if quiz_rows else 0}
+    page_size=max(25,min(int(page_size or 100),200))
+    total_pages=max(1,(total_filtered+page_size-1)//page_size)
+    page=max(1,min(int(page or 1),total_pages))
+    start=(page-1)*page_size
+    visible_rows=rows[start:start+page_size]
+    return render_template('admin_reports.html', template_context(request,db,rows=visible_rows,summary=summary,risk_filter=risk,page=page,page_size=page_size,total_pages=total_pages,total_filtered=total_filtered))
 
 @router.get('/admin/reports.xlsx')
 def admin_student_reports_xlsx(request: Request, db: Session=Depends(get_db)):

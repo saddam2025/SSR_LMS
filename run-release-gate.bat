@@ -12,4 +12,4 @@ for %%T in (tests\smoke_test.py tests\security_smoke.py tests\account_sharing_v3
   python %%T || exit /b 1
   if exist "!DBFILE!" del /q "!DBFILE!"
 )
-echo V79 RELEASE GATE OK
+for /f %%V in (VERSION) do echo %%V RELEASE GATE OK

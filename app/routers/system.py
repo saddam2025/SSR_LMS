@@ -27,13 +27,18 @@ def health():
 
 @router.get("/ready")
 def ready(db: Session = Depends(get_db)):
-    db.execute(text("SELECT 1"))
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception:
+        raise HTTPException(503, "database_unavailable")
     redis_state = "disabled"
     if os.getenv("REDIS_URL", "").strip():
-        client = cache_client()
-        if not client:
-            raise HTTPException(503, "Redis unavailable")
-        client.ping()
+        try:
+            client = cache_client()
+            if not client or client.ping() is not True:
+                raise RuntimeError("redis unavailable")
+        except Exception:
+            raise HTTPException(503, "redis_unavailable")
         redis_state = "ok"
     return {"status": "ready", "database": "ok", "redis": redis_state, "environment": os.getenv("ENV", "development")}
 

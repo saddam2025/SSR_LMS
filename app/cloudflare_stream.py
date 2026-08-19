@@ -47,14 +47,22 @@ def stream_edge_ready() -> bool:
     return len(secret) >= 32
 
 
-def sign_stream_grant(video_uid: str, lesson_id: int, user_id: int, ttl_seconds: int = 300) -> str:
+def stream_grant_ttl() -> int:
+    try:
+        configured = int(os.getenv("STREAM_EDGE_GRANT_TTL_SECONDS", "90"))
+    except ValueError:
+        configured = 90
+    return max(60, min(configured, 300))
+
+
+def sign_stream_grant(video_uid: str, lesson_id: int, user_id: int, ttl_seconds: int | None = None) -> str:
     """Create a short edge-only grant; this is not the Stream playback token."""
     if not _UID_RE.fullmatch(video_uid or ""):
         raise ValueError("invalid_cloudflare_stream_uid")
     secret = os.getenv("CF_EDGE_SIGNING_SECRET", "")
     if len(secret) < 32:
         raise RuntimeError("CF_EDGE_SIGNING_SECRET must be at least 32 characters")
-    ttl = max(60, min(int(ttl_seconds), 300))
+    ttl = stream_grant_ttl() if ttl_seconds is None else max(60, min(int(ttl_seconds), 300))
     expires = int(time.time()) + ttl
     nonce = secrets.token_urlsafe(9)
     payload = f"v1|{video_uid}|{int(lesson_id)}|{int(user_id)}|{expires}|{nonce}".encode("utf-8")

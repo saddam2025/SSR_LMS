@@ -10,7 +10,7 @@ def sha256(p):
     return h.hexdigest()
 def main():
     ap=argparse.ArgumentParser()
-    ap.add_argument("--manifest", type=Path, default=ROOT/"RELEASE-MANIFEST-V89.json")
+    ap.add_argument("--manifest", type=Path, default=ROOT/f"RELEASE-MANIFEST-{(ROOT/'VERSION').read_text().strip()}.json")
     a=ap.parse_args()
     d=json.loads(a.manifest.read_text())
     failures=[]
@@ -20,9 +20,9 @@ def main():
         elif p.stat().st_size != item["size"]: failures.append(f"size: {item['path']}")
         elif sha256(p) != item["sha256"]: failures.append(f"sha256: {item['path']}")
     if failures:
-        print("V89 RELEASE MANIFEST: FAIL")
+        print(f"{(ROOT/'VERSION').read_text().strip()} RELEASE MANIFEST: FAIL")
         for x in failures[:50]: print("[FAIL]",x)
         return 1
-    print(f"V89 RELEASE MANIFEST: PASS ({len(d.get('files',[]))} files)")
+    print(f"{(ROOT/'VERSION').read_text().strip()} RELEASE MANIFEST: PASS ({len(d.get('files',[]))} files)")
     return 0
 if __name__=="__main__": raise SystemExit(main())

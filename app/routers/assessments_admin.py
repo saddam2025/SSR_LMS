@@ -86,6 +86,7 @@ def add_question(quiz_id: int, request: Request, text: str = Form(...), option_a
     if not quiz: raise HTTPException(404)
     course = db.get(Course, quiz.course_id)
     if not can_manage_course(u.role, teacher_id=course.teacher_id, user_id=u.id): raise HTTPException(403)
+    if quiz.published: raise HTTPException(409, "أوقف نشر الاختبار قبل إضافة أو تعديل الأسئلة")
     correct = correct.upper()
     if correct not in {"A","B","C","D"}: raise HTTPException(400)
     q = Question(quiz_id=quiz.id, text=text.strip(), option_a=option_a.strip(), option_b=option_b.strip(), option_c=option_c.strip(), option_d=option_d.strip(), correct=correct)
@@ -101,6 +102,7 @@ def update_quiz_settings(quiz_id: int, request: Request, time_limit_minutes: int
     if not check_csrf(request.session, csrf): raise HTTPException(403)
     quiz = db.get(Quiz, quiz_id); course = db.get(Course, quiz.course_id) if quiz else None
     if not quiz or not course or not can_manage_course(u.role, teacher_id=course.teacher_id, user_id=u.id): raise HTTPException(403)
+    if quiz.published: raise HTTPException(409, "أوقف نشر الاختبار قبل تغيير الوقت أو عدد المحاولات أو ترتيب الأسئلة")
     quiz.time_limit_minutes=max(1,min(300,time_limit_minutes)); quiz.max_attempts=max(1,min(20,max_attempts)); quiz.shuffle_questions = shuffle_questions == "on"
     db.commit(); audit(db, request, u, "quiz_settings_updated", {"quiz_id":quiz.id})
     return RedirectResponse(f"/admin/quiz/{quiz.id}",303)
@@ -128,6 +130,7 @@ def use_bank_item(quiz_id:int, bank_id:int, request:Request, csrf:str=Form(...),
     if not check_csrf(request.session,csrf): raise HTTPException(403)
     quiz=db.get(Quiz,quiz_id); course=db.get(Course,quiz.course_id) if quiz else None; item=db.get(QuestionBankItem,bank_id)
     if not quiz or not course or not item or item.course_id!=course.id or not can_manage_course(u.role,teacher_id=course.teacher_id,user_id=u.id): raise HTTPException(403)
+    if quiz.published: raise HTTPException(409, "أوقف نشر الاختبار قبل إضافة أسئلة من البنك")
     q=Question(quiz_id=quiz.id,text=item.text,option_a=item.option_a,option_b=item.option_b,option_c=item.option_c,option_d=item.option_d,correct=item.correct)
     db.add(q); db.flush(); pos=db.query(Question).filter_by(quiz_id=quiz.id).count(); db.add(QuizQuestionSetting(question_id=q.id,position=pos,points=item.default_points))
     tax=db.query(QuestionBankTaxonomy).filter_by(bank_item_id=item.id).first()
@@ -141,6 +144,7 @@ def update_question_meta(question_id:int, request:Request, position:int=Form(1),
     if not check_csrf(request.session,csrf): raise HTTPException(403)
     q=db.get(Question,question_id); quiz=db.get(Quiz,q.quiz_id) if q else None; course=db.get(Course,quiz.course_id) if quiz else None
     if not q or not quiz or not course or not can_manage_course(u.role,teacher_id=course.teacher_id,user_id=u.id): raise HTTPException(403)
+    if quiz.published: raise HTTPException(409, "أوقف نشر الاختبار قبل تغيير ترتيب السؤال أو درجته")
     meta=db.query(QuizQuestionSetting).filter_by(question_id=q.id).first()
     if not meta: meta=QuizQuestionSetting(question_id=q.id); db.add(meta)
     meta.position=max(1,position); meta.points=max(1,min(100,points)); db.commit()

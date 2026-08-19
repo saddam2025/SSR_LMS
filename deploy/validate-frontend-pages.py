@@ -8,10 +8,10 @@ missing=[x for x in required if not (F/x).is_file()]
 if missing:
     raise SystemExit('FRONTEND PAGES CHECK FAILED: missing '+', '.join(missing))
 config=(F/'config.js').read_text(encoding='utf-8')
-if 'https://api.ragab-seddik.com' not in config:
+if 'window.location.origin' not in config:
     raise SystemExit('FRONTEND PAGES CHECK FAILED: production API_BASE mismatch')
 headers=(F/'_headers').read_text(encoding='utf-8')
-for needle in ['Content-Security-Policy:', 'X-Content-Type-Options: nosniff', 'https://api.ragab-seddik.com']:
+for needle in ['Content-Security-Policy:', 'X-Content-Type-Options: nosniff']:
     if needle not in headers:
         raise SystemExit('FRONTEND PAGES CHECK FAILED: missing '+needle)
 js=(F/'assets/app.js').read_text(encoding='utf-8')

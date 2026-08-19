@@ -6,7 +6,7 @@ SCRIPT=ROOT/'deploy'/'production-cutover-readiness.py'
 def write(p,d): p.write_text(json.dumps(d), encoding='utf-8')
 
 def main():
-    assert (ROOT/'VERSION').read_text().strip()=='V85'
+    assert (ROOT/'VERSION').read_text().strip().startswith('V')
     text=(ROOT/'app'/'main.py').read_text(encoding='utf-8')
     assert '@app.get(' not in text and '@app.post(' not in text
     with tempfile.TemporaryDirectory() as td:
@@ -18,7 +18,8 @@ def main():
         write(ev/'first.json', {'go':True,'student_login_ok':True,'course_access_ok':True,'protected_video_ok':True,'logout_ok':True})
         write(ev/'mon.json', {'go':True,'health_monitoring_ready':True,'error_monitoring_ready':True,'db_redis_monitoring_ready':True,'stream_webhook_monitoring_ready':True})
         out=td/'out.json'
-        p=subprocess.run([sys.executable,str(SCRIPT),'--v84-report',str(ROOT/'artifacts'/'v84-operational-acceptance.json'),'--production-env',str(prod),'--rollback-evidence',str(ev/'rollback.json'),'--first-user-evidence',str(ev/'first.json'),'--monitoring-evidence',str(ev/'mon.json'),'--json-report',str(out)],cwd=ROOT,text=True,capture_output=True)
+        v84=td/'v84-no-go.json'; write(v84, {'version':'V84','environment':'staging','go':False})
+        p=subprocess.run([sys.executable,str(SCRIPT),'--v84-report',str(v84),'--production-env',str(prod),'--rollback-evidence',str(ev/'rollback.json'),'--first-user-evidence',str(ev/'first.json'),'--monitoring-evidence',str(ev/'mon.json'),'--json-report',str(out)],cwd=ROOT,text=True,capture_output=True)
         assert p.returncode != 0
         data=json.loads(out.read_text())
         assert data['go'] is False and data['safety']['dns_changed'] is False

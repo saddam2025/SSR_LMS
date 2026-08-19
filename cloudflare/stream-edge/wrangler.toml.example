@@ -1,0 +1,21 @@
+name = "mostashar-stream-edge"
+main = "src/index.js"
+compatibility_date = "2026-08-16"
+workers_dev = false
+
+# Replace the domain only if your final domain differs.
+routes = [
+  { pattern = "ragab-seddik.com/_edge/stream/*", zone_name = "ragab-seddik.com" },
+  { pattern = "www.ragab-seddik.com/_edge/stream/*", zone_name = "ragab-seddik.com" }
+]
+
+[stream]
+binding = "STREAM"
+
+[vars]
+# This is the public Stream customer code, not an API token.
+CF_STREAM_CUSTOMER_CODE = "REPLACE_WITH_STREAM_CUSTOMER_CODE"
+
+# NEVER put CF_EDGE_SIGNING_SECRET here. Add it with:
+# npx wrangler secret put CF_EDGE_SIGNING_SECRET
+# Use exactly the same value configured on Railway.

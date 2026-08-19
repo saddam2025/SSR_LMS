@@ -4,9 +4,10 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from .db import get_db
+from .db import engine, get_db
 from .models import (
     AuditLog, CheckpointAttempt, DiscussionPost, Homework, Lesson, LessonCheckpoint,
     LessonFlashcard, PointLedger, StudyAssistantLog, User,
@@ -14,8 +15,15 @@ from .models import (
 from .api_v1_common import user
 from .access import authorized_for_course, content_schedule_allows, lesson_access_state
 from .security import check_csrf
+from .request_context import client_ip
 
 router = APIRouter(tags=["api-v1-lesson-interactions"])
+
+def _pg_xact_lock(db, namespace: int, entity_id: int):
+    if engine.dialect.name == "postgresql":
+        safe_entity = int(entity_id) & 0x7FFFFFFF
+        db.execute(text("SELECT pg_advisory_xact_lock(:ns, :entity)"), {"ns": int(namespace), "entity": safe_entity})
+
 
 
 class CheckpointAnswer(BaseModel):
@@ -32,13 +40,8 @@ class DiscussionCreate(BaseModel):
     parent_id: int | None = None
 
 
-def _client_ip(request: Request) -> str:
-    forwarded = (request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for") or "").split(",", 1)[0].strip()
-    return (forwarded or (request.client.host if request.client else ""))[:80]
-
-
 def _audit(db: Session, request: Request, resolved: User, action: str, metadata: dict | None = None) -> None:
-    db.add(AuditLog(user_id=resolved.id, action=action, ip=_client_ip(request), metadata_json=json.dumps(metadata or {}, ensure_ascii=False)))
+    db.add(AuditLog(user_id=resolved.id, action=action, ip=client_ip(request), metadata_json=json.dumps(metadata or {}, ensure_ascii=False)))
 
 
 def _csrf(request: Request) -> None:
@@ -110,10 +113,11 @@ def checkpoint_answer(lesson_id: int, checkpoint_id: int, payload: CheckpointAns
     cp = db.get(LessonCheckpoint, checkpoint_id)
     if not cp or cp.lesson_id != lesson.id or not cp.published:
         raise HTTPException(404)
-    selected = (payload.answer or "").strip().upper()[:1]
+    selected = (payload.answer or "").strip().upper()
     if selected not in {"A", "B", "C", "D"}:
         raise HTTPException(400, "Invalid answer")
-    rec = db.query(CheckpointAttempt).filter_by(checkpoint_id=cp.id, student_id=resolved.id).first()
+    _pg_xact_lock(db, 5508, (int(resolved.id) * 1000003 + int(cp.id)))
+    rec = db.query(CheckpointAttempt).filter_by(checkpoint_id=cp.id, student_id=resolved.id).with_for_update().first()
     first = rec is None
     if not rec:
         rec = CheckpointAttempt(checkpoint_id=cp.id, student_id=resolved.id)

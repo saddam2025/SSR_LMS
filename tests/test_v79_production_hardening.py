@@ -11,7 +11,7 @@ client = TestClient(app)
 r = client.get("/health", headers={"X-Request-ID": "v79-check-123"})
 assert r.status_code == 200
 assert r.headers.get("X-Request-ID") == "v79-check-123"
-assert r.json().get("version") == "V79"
+assert r.json().get("version") == __import__("pathlib").Path(__file__).resolve().parents[1].joinpath("VERSION").read_text().strip()
 
 r2 = client.get("/ready")
 assert r2.status_code == 200, r2.text

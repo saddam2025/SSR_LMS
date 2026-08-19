@@ -125,11 +125,13 @@ def forgot_password_complete(request: Request, password: str = Form(...), passwo
     return RedirectResponse("/login?reset=1", 303)
 
 
+@router.get("/Login", response_class=HTMLResponse, include_in_schema=False)
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request, db: Session = Depends(get_db)):
     return render_template("login.html", ctx(request, db, error=None))
 
 
+@router.post("/Login", include_in_schema=False)
 @router.post("/login")
 def login(request: Request, email: str = Form(...), password: str = Form(...), csrf: str = Form(...), db: Session = Depends(get_db)):
     if not check_csrf(request.session, csrf): raise HTTPException(403, "CSRF failed")

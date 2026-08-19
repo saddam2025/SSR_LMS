@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import os
 import re
+import json
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
 
@@ -34,6 +35,42 @@ def stream_upload_ready() -> bool:
     token = os.getenv("CF_STREAM_API_TOKEN", "").strip()
     return bool(_ACCOUNT_RE.fullmatch(account_id) and len(token) >= 20)
 
+
+
+
+def allowed_origins() -> list[str]:
+    """Return Cloudflare Stream Allowed Origins as domain[:port] entries."""
+    raw = os.getenv("STREAM_ALLOWED_ORIGINS", "").strip()
+    values = [item.strip() for item in raw.split(",") if item.strip()]
+    if not values:
+        public = os.getenv("PUBLIC_BASE_URL", "").strip()
+        if public:
+            try:
+                parsed = urlparse(public)
+                if parsed.hostname:
+                    host = parsed.hostname.lower()
+                    if parsed.port and not ((parsed.scheme == "https" and parsed.port == 443) or (parsed.scheme == "http" and parsed.port == 80)):
+                        host = f"{host}:{parsed.port}"
+                    values = [host]
+            except ValueError:
+                values = []
+    result: list[str] = []
+    for value in values:
+        candidate = value
+        if "://" in value:
+            try:
+                parsed = urlparse(value)
+                candidate = (parsed.hostname or "").lower()
+                if parsed.port and not ((parsed.scheme == "https" and parsed.port == 443) or (parsed.scheme == "http" and parsed.port == 80)):
+                    candidate = f"{candidate}:{parsed.port}"
+            except ValueError:
+                continue
+        candidate = candidate.strip().lower().rstrip("/")
+        if not candidate or "/" in candidate or len(candidate) > 253:
+            continue
+        if candidate not in result:
+            result.append(candidate)
+    return result[:20]
 
 def max_upload_bytes() -> int:
     try:
@@ -118,15 +155,17 @@ def create_tus_upload(*, file_name: str, file_size: int, content_type: str, crea
 
     expiry = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat().replace("+00:00", "Z")
     duration = max_duration_seconds()
-    metadata = ",".join(
-        (
-            f"name {_b64(file_name)}",
-            f"filetype {_b64(content_type or 'application/octet-stream')}",
-            f"maxDurationSeconds {_b64(str(duration))}",
-            "requiresignedurls",
-            f"expiry {_b64(expiry)}",
-        )
-    )
+    metadata_items = [
+        f"name {_b64(file_name)}",
+        f"filetype {_b64(content_type or 'application/octet-stream')}",
+        f"maxDurationSeconds {_b64(str(duration))}",
+        "requiresignedurls",
+        f"expiry {_b64(expiry)}",
+    ]
+    origins = allowed_origins()
+    if origins:
+        metadata_items.append(f"allowedorigins {_b64(json.dumps(origins, separators=(',', ':')))}")
+    metadata = ",".join(metadata_items)
     endpoint = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/stream?direct_user=true"
     headers = {
         "Authorization": f"Bearer {token}",
@@ -179,10 +218,14 @@ def enforce_signed_video(uid: str) -> None:
     account_id, token = _credentials()
     endpoint = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/stream/{uid}"
     try:
+        protection = {"uid": uid, "requireSignedURLs": True}
+        origins = allowed_origins()
+        if origins:
+            protection["allowedOrigins"] = origins
         response = httpx.post(
             endpoint,
             headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            json={"uid": uid, "requireSignedURLs": True},
+            json=protection,
             timeout=20.0,
         )
     except httpx.HTTPError as exc:

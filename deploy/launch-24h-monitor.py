@@ -16,8 +16,8 @@ def probe(url: str, timeout: int=15) -> dict:
 
 def main():
     ap=argparse.ArgumentParser()
-    ap.add_argument("--api", default="https://api.ragab-seddik.com")
-    ap.add_argument("--frontend", default="https://student.ragab-seddik.com")
+    ap.add_argument("--api", default="https://ragab-seddik.com")
+    ap.add_argument("--frontend", default="https://ragab-seddik.com")
     ap.add_argument("--iterations", type=int, default=1)
     ap.add_argument("--interval-seconds", type=int, default=300)
     ap.add_argument("--output", type=Path, default=Path("artifacts/v87-launch-monitor.json"))
@@ -26,7 +26,7 @@ def main():
     for i in range(max(1,a.iterations)):
         sample={"timestamp":int(time.time()),"health":probe(a.api.rstrip("/")+"/health"),
                 "ready":probe(a.api.rstrip("/")+"/ready"),
-                "frontend":probe(a.frontend.rstrip("/")+"/student/")}
+                "frontend":probe(a.frontend.rstrip("/")+"/")}
         samples.append(sample)
         print(f"sample={i+1} health={sample['health'].get('status')} ready={sample['ready'].get('status')} frontend={sample['frontend'].get('status')}")
         if i+1<a.iterations: time.sleep(max(1,a.interval_seconds))

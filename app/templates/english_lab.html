@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}مختبر الإنجليزي التفاعلي | منصة المستشار{% endblock %}
+{% block body_class %}english-lab-page{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="/static/sherif-inspired-v96.css?v=20260817-1">{% endblock %}
+{% block content %}
+<section class="ms-lab-hero">
+  <span class="ms-kicker">● الميزة اللي مش هتلاقيها في أي منصة</span>
+  <h1>مختبر <em>الإنجليزي</em> التفاعلي</h1>
+  <p>مش بس فيديوهات — هنا بتتدرّب بنفسك: كوّن الجملة، اسمع النطق الصحيح، اختبر نفسك، وراجع الكلمات والقواعد بطريقة تفاعلية.</p>
+  <div class="ms-lab-nav" role="navigation" aria-label="أدوات المختبر">
+    <button type="button" data-target="tense-lab">◷ مختبر الأزمنة</button>
+    <button type="button" data-target="flashcards">▣ فلاش كاردز</button>
+    <button type="button" data-target="quick-quiz">؟ كويز تفاعلي</button>
+    <button type="button" data-target="sentence-builder">≡ كوّن الجملة</button>
+    <button type="button" data-target="speaking">🎙 النطق والاستماع</button>
+    <button type="button" data-target="listening">🎧 اختبار الاستماع</button>
+    <button type="button" data-target="irregular">T الأفعال الشاذة</button>
+    <button type="button" data-target="matching">⌘ لعبة التوصيل</button>
+    <button type="button" data-target="reading">▤ قطعة استيعاب</button>
+    <button type="button" data-target="letters">↕ ترتيب الحروف</button>
+  </div>
+</section>
+
+<section class="ms-lab-panel active" id="tense-lab" data-lab-panel>
+  <div class="ms-panel-head"><div><span>تصريف حي</span><h2>مختبر الأزمنة</h2></div><p>اختار الفاعل والفعل والزمن وشوف الإثبات والنفي والسؤال، واضغط السماعة للنطق.</p></div>
+  <div class="ms-form-grid three">
+    <label>الفاعل (Subject)<select id="lab-subject"><option value="I">I — أنا</option><option value="He" selected>He — هو</option><option value="She">She — هي</option><option value="They">They — هم</option><option value="We">We — نحن</option></select></label>
+    <label>الفعل (Verb)<select id="lab-verb"><option value="go" selected>go — يذهب</option><option value="study">study — يذاكر</option><option value="play">play — يلعب</option><option value="watch">watch — يشاهد</option><option value="write">write — يكتب</option><option value="have">have — يمتلك</option><option value="do">do — يفعل</option></select></label>
+    <label>الزمن (Tense)<select id="lab-tense"><option value="present-simple" selected>Present Simple — المضارع البسيط</option><option value="present-continuous">Present Continuous — المضارع المستمر</option><option value="past-simple">Past Simple — الماضي البسيط</option><option value="future-simple">Future Simple — المستقبل البسيط</option></select></label>
+  </div>
+  <div class="ms-formula" id="lab-formula"><span>He</span><b>goes</b></div>
+  <div class="ms-sentence-results">
+    <button type="button" class="ms-sentence-row" data-speak-id="lab-positive"><span>🔊</span><b id="lab-positive">He goes.</b><small class="positive">مثبت</small></button>
+    <button type="button" class="ms-sentence-row" data-speak-id="lab-negative"><span>🔊</span><b id="lab-negative">He doesn't go.</b><small class="negative">منفي</small></button>
+    <button type="button" class="ms-sentence-row" data-speak-id="lab-question"><span>🔊</span><b id="lab-question">Does he go?</b><small class="question">سؤال</small></button>
+  </div>
+  <div class="ms-tip" id="lab-tip">💡 مع he/she/it في المضارع البسيط نضيف s/es للفعل، والنفي والسؤال يستخدمان does + المصدر.</div>
+</section>
+
+<section class="ms-lab-panel" id="flashcards" data-lab-panel>
+  <div class="ms-panel-head"><div><span>Vocabulary</span><h2>فلاش كاردز ذكية</h2></div><p>اقلب الكارت، اسمع الكلمة، وانتقل للكلمة التالية.</p></div>
+  <div class="ms-flashcard" id="flashcard" tabindex="0" role="button" aria-label="اقلب بطاقة المفردات"><small id="flash-label">Word 1 / 6</small><h3 id="flash-word">achieve</h3><p id="flash-meaning">اضغط للكشف عن المعنى</p><em id="flash-example"></em></div>
+  <div class="ms-inline-actions"><button type="button" id="flash-speak">🔊 اسمع</button><button type="button" id="flash-flip">اقلب الكارت</button><button type="button" id="flash-next">التالي ←</button></div>
+</section>
+
+<section class="ms-lab-panel" id="quick-quiz" data-lab-panel>
+  <div class="ms-panel-head"><div><span>Quick Quiz</span><h2>كويز تفاعلي</h2></div><p>سؤال سريع وتصحيح فوري داخل الصفحة.</p></div>
+  <div class="ms-quiz-box"><h3 id="quiz-question"></h3><div id="quiz-options" class="ms-option-grid"></div><p id="quiz-feedback" aria-live="polite"></p><button type="button" id="quiz-next">سؤال جديد</button></div>
+</section>
+
+<section class="ms-lab-panel" id="sentence-builder" data-lab-panel>
+  <div class="ms-panel-head"><div><span>Build it</span><h2>كوّن الجملة</h2></div><p>اضغط الكلمات بالترتيب الصحيح ثم تحقق من إجابتك.</p></div>
+  <div class="ms-builder"><div id="builder-source" class="ms-word-bank"></div><div id="builder-answer" class="ms-answer-zone">اضغط الكلمات لتكوين الجملة</div><div class="ms-inline-actions"><button type="button" id="builder-check">تحقق</button><button type="button" id="builder-reset">إعادة</button><button type="button" id="builder-new">جملة جديدة</button></div><p id="builder-feedback" aria-live="polite"></p></div>
+</section>
+
+<section class="ms-lab-panel" id="speaking" data-lab-panel>
+  <div class="ms-panel-head"><div><span>Speak & Listen</span><h2>النطق والاستماع</h2></div><p>اسمع الجملة ثم حاول نطقها. إذا لم يدعم المتصفح التعرف على الصوت يمكنك كتابتها.</p></div>
+  <div class="ms-speaking-box"><h3 id="speak-target">I am ready for the exam.</h3><div class="ms-inline-actions"><button type="button" id="speak-play">🔊 اسمع الجملة</button><button type="button" id="speak-record">🎙 ابدأ التحدث</button></div><label>أو اكتب ما سمعته<input id="speak-input" type="text" autocomplete="off" placeholder="Type the sentence here"></label><button type="button" id="speak-check">قيّم الإجابة</button><p id="speak-feedback" aria-live="polite"></p></div>
+</section>
+
+<section class="ms-lab-panel" id="listening" data-lab-panel>
+  <div class="ms-panel-head"><div><span>Listening Test</span><h2>اختبار الاستماع</h2></div><p>شغّل الجملة ثم اختر معناها الصحيح.</p></div>
+  <div class="ms-listening-box"><button type="button" id="listening-play">🔊 تشغيل المقطع</button><div id="listening-options" class="ms-option-grid"></div><p id="listening-feedback" aria-live="polite"></p><button type="button" id="listening-next">مقطع جديد</button></div>
+</section>
+
+<section class="ms-lab-panel" id="irregular" data-lab-panel>
+  <div class="ms-panel-head"><div><span>Irregular Verbs</span><h2>الأفعال الشاذة</h2></div><p>ابحث بالفعل وشوف الماضي والتصريف الثالث.</p></div>
+  <label class="ms-search-label">ابحث بالفعل<input id="irregular-search" type="search" placeholder="مثال: go"></label><div id="irregular-table" class="ms-verb-table"></div>
+</section>
+
+<section class="ms-lab-panel" id="matching" data-lab-panel>
+  <div class="ms-panel-head"><div><span>Match</span><h2>لعبة التوصيل</h2></div><p>اختار كلمة إنجليزية ثم معناها العربي.</p></div>
+  <div id="matching-board" class="ms-matching-board"></div><p id="matching-feedback" aria-live="polite"></p><button type="button" id="matching-reset">لعبة جديدة</button>
+</section>
+
+<section class="ms-lab-panel" id="reading" data-lab-panel>
+  <div class="ms-panel-head"><div><span>Reading</span><h2>قطعة استيعاب</h2></div><p>اقرأ القطعة وأجب عن السؤال ثم صحح فورًا.</p></div>
+  <article class="ms-reading-card"><p>Salma studies English every day because she wants to communicate confidently. She watches short lessons, writes new words in a notebook, and practices speaking with her classmates.</p><h3>Why does Salma study English every day?</h3><div id="reading-options" class="ms-option-grid"><button type="button" data-correct="0">Because she dislikes school.</button><button type="button" data-correct="1">Because she wants to communicate confidently.</button><button type="button" data-correct="0">Because she never practices speaking.</button></div><p id="reading-feedback" aria-live="polite"></p></article>
+</section>
+
+<section class="ms-lab-panel" id="letters" data-lab-panel>
+  <div class="ms-panel-head"><div><span>Letters</span><h2>ترتيب الحروف</h2></div><p>رتّب الحروف لتكوين الكلمة الصحيحة.</p></div>
+  <div class="ms-letters-box"><div id="letters-scramble" class="ms-letter-chips"></div><label>اكتب الكلمة<input id="letters-input" type="text" autocomplete="off"></label><div class="ms-inline-actions"><button type="button" id="letters-check">تحقق</button><button type="button" id="letters-new">كلمة جديدة</button></div><p id="letters-feedback" aria-live="polite"></p></div>
+</section>
+
+<section class="ms-lab-bottom-cta">
+  <div><span>كمّل تدريبك على المنصة</span><h2>حوّل التدريب اليومي إلى تقدم حقيقي</h2><p>سجّل حسابك للوصول للكورسات والاختبارات وخطة المذاكرة والمساعد الذكي.</p></div>
+  <div>{% if user %}<a href="/dashboard">اذهب إلى لوحتك</a>{% else %}<a href="/register">ابدأ مجانًا دلوقتي</a><a class="light" href="/login">تسجيل دخول</a>{% endif %}</div>
+</section>
+<script src="/static/english-lab-core.js?v=20260817-1"></script>
+<script src="/static/english-lab.js?v=20260817-2" defer></script>
+{% endblock %}

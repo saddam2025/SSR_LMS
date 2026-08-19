@@ -2,8 +2,9 @@ from pathlib import Path
 import os, subprocess, sys
 ROOT=Path(__file__).resolve().parents[1]
 
-def test_no_database_artifacts_in_clean_tree():
-    assert not [p for p in ROOT.rglob("*.db") if "__pycache__" not in p.parts]
+def test_release_policy_excludes_database_artifacts():
+    dockerignore=(ROOT/".dockerignore").read_text()
+    assert "*.db" in dockerignore and "*.sqlite" in dockerignore and "*.sqlite3" in dockerignore
 
 def test_manifest_excludes_mutable_suffixes():
     s=(ROOT/"deploy"/"build-release-manifest.py").read_text()

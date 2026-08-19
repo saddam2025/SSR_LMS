@@ -9,4 +9,4 @@ python -m compileall -q app tests
 python release_check.py
 bash run-all-tests-isolated.sh
 
-echo "V79 RELEASE GATE OK"
+echo "$(cat VERSION) RELEASE GATE OK"

@@ -1,10 +1,17 @@
 import html, io, zipfile
 from datetime import datetime
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from ..models import User, Enrollment, QuizAttempt, HomeworkSubmission, StudentProfile, Homework
 
-def student_performance_rows(db: Session):
-    students = db.query(User).filter(User.role == "student", User.is_active == True).order_by(User.name).all()
+def student_performance_rows(db: Session, student_ids: list[int] | None = None):
+    query = db.query(User).filter(User.role == "student", User.is_active == True)
+    if student_ids is not None:
+        ids = list(dict.fromkeys(int(x) for x in student_ids if int(x) > 0))
+        if not ids:
+            return []
+        query = query.filter(User.id.in_(ids))
+    students = query.order_by(User.name).all()
     student_ids = [s.id for s in students]
     enrollments = db.query(Enrollment).filter(Enrollment.user_id.in_(student_ids or [-1]), Enrollment.active == True).all()
     attempts = db.query(QuizAttempt).filter(QuizAttempt.user_id.in_(student_ids or [-1]), QuizAttempt.status == "submitted").all()
@@ -52,6 +59,65 @@ def student_performance_rows(db: Session):
                      "quiz_avg": quiz_avg, "quiz_count": len(ats), "homework_avg": homework_avg, "homework_count": len(subs),
                      "missed": missed, "late": late, "compliance": compliance, "risk": risk, "risk_label": label, "signals": signals})
     return rows
+
+
+def performance_candidate_student_ids(db: Session, limit: int = 400) -> list[int]:
+    """Return a bounded set of students likely to need attention.
+
+    The daily admin dashboard only renders a handful of risk rows. Scanning every
+    student, quiz and homework on every dashboard request becomes O(total students).
+    This preselection keeps the dashboard bounded while the full reports page can
+    still compute all rows on demand.
+    """
+    limit = max(50, min(int(limit), 1000))
+    out: list[int] = []
+    seen: set[int] = set()
+
+    def add(rows):
+        for row in rows:
+            if hasattr(row, "_mapping"):
+                uid = int(next(iter(row._mapping.values())))
+            elif isinstance(row, (tuple, list)):
+                uid = int(row[0])
+            else:
+                uid = int(getattr(row, "user_id", getattr(row, "id", row)))
+            if uid > 0 and uid not in seen:
+                seen.add(uid); out.append(uid)
+                if len(out) >= limit:
+                    break
+
+    low_progress = (
+        db.query(Enrollment.user_id)
+        .join(User, User.id == Enrollment.user_id)
+        .filter(User.role == "student", User.is_active == True, Enrollment.active == True, Enrollment.progress < 60)
+        .order_by(Enrollment.progress.asc(), Enrollment.user_id.asc())
+        .limit(limit)
+        .all()
+    )
+    add(low_progress)
+    if len(out) < limit:
+        avg_score = func.avg(QuizAttempt.score)
+        low_quiz = (
+            db.query(QuizAttempt.user_id)
+            .join(User, User.id == QuizAttempt.user_id)
+            .filter(User.role == "student", User.is_active == True, QuizAttempt.status == "submitted")
+            .group_by(QuizAttempt.user_id)
+            .having(avg_score < 65)
+            .order_by(avg_score.asc())
+            .limit(limit)
+            .all()
+        )
+        add(low_quiz)
+    if len(out) < min(limit, 120):
+        recent = (
+            db.query(User.id)
+            .filter(User.role == "student", User.is_active == True)
+            .order_by(User.id.desc())
+            .limit(min(120, limit))
+            .all()
+        )
+        add(recent)
+    return out[:limit]
 
 def pdf_arabic(value):
     """Minimal Arabic shaping for ReportLab environments without browser-style RTL shaping."""

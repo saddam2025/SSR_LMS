@@ -16,8 +16,9 @@ from sqlalchemy.orm import Session
 from ..db import engine
 from ..models import ActiveSession, Device, OTPChallenge, User
 from ..request_context import DEVICE_COOKIE_NAME, IS_PRODUCTION, audit, client_ip, template_context
+from ..permissions import STAFF_ROLES
 from ..security import (
-    MAX_DEVICES, STUDENT_SINGLE_SESSION, create_session_token, device_fingerprint,
+    MAX_DEVICES, REQUIRE_STAFF_MFA, STUDENT_SINGLE_SESSION, create_session_token, device_fingerprint,
     ensure_csrf, session_absolute_expiry, session_idle_deadline, sha256,
 )
 
@@ -150,11 +151,16 @@ def establish_session(request: Request, db: Session, u: User, render_login):
         "super_admin": "/admin", "admin": "/admin", "content_manager": "/teacher",
         "support": "/support", "accounting": "/admin/commerce",
     }
-    frontend_origin = os.getenv("FRONTEND_PRIMARY_ORIGIN", "").strip().rstrip("/")
+    separated_frontend = os.getenv("SEPARATED_FRONTEND_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
+    frontend_origin = os.getenv("FRONTEND_PRIMARY_ORIGIN", "").strip().rstrip("/") if separated_frontend else ""
     allowed_frontends = [x.strip().rstrip("/") for x in os.getenv("FRONTEND_ORIGINS", "").split(",") if x.strip()]
     if frontend_origin and frontend_origin not in allowed_frontends:
         frontend_origin = ""
-    if u.role in staff_landing:
+    if u.role in STAFF_ROLES and REQUIRE_STAFF_MFA and not u.mfa_enabled:
+        # First staff login must configure MFA. Go there directly instead of
+        # bouncing through /admin -> 428 -> /account/security.
+        response = RedirectResponse("/account/security?required=1", 303)
+    elif u.role in staff_landing:
         response = RedirectResponse(staff_landing[u.role], 303)
     elif u.role == "parent":
         response = RedirectResponse(f"{frontend_origin}/parent/" if frontend_origin else "/parent", 303)

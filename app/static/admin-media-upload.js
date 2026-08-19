@@ -29,40 +29,126 @@
     }
   }
 
-  function formUpload(form) {
-    const output = form.querySelector("[data-upload-message]");
-    const meter = form.querySelector("[data-upload-progress]");
-    const button = form.querySelector("button[type=submit],button:not([type])");
-    form.addEventListener("submit", function (event) {
-      event.preventDefault();
-      if (!form.reportValidity()) return;
+  function serverFormUpload(form, output, meter, button) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", form.action, true);
+    xhr.timeout = 15 * 60 * 1000;
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.upload.addEventListener("progress", function (item) {
+      if (item.lengthComputable) progress(meter, (item.loaded / item.total) * 100);
+    });
+    xhr.addEventListener("load", function () {
+      const body = parseJson(xhr);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        progress(meter, 100);
+        text(output, body.message || "تم رفع الملف وربطه بالدرس بنجاح.", "success");
+        window.setTimeout(function () {
+          window.location.assign(body.return_to || window.location.href);
+        }, 500);
+        return;
+      }
+      text(output, body.detail || "تعذر رفع الملف. راجع النوع والحجم وإعداد التخزين.", "error");
+      if (button) button.disabled = false;
+    });
+    xhr.addEventListener("timeout", function () {
+      text(output, "استغرق الرفع وقتًا أطول من المتوقع. أعد المحاولة؛ الفيديوهات الكبيرة استخدم لها Stream القابل للاستكمال.", "error");
+      if (button) button.disabled = false;
+    });
+    xhr.addEventListener("error", function () {
+      text(output, "انقطع الاتصال أثناء رفع الملف. أعد المحاولة.", "error");
+      if (button) button.disabled = false;
+    });
+    text(output, "جارٍ الرفع عبر المسار الاحتياطي… لا تغلق الصفحة.", "info");
+    progress(meter, 0);
+    xhr.send(new FormData(form));
+  }
+
+  function putDirect(url, file, contentType, meter) {
+    return new Promise(function (resolve, reject) {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", form.action, true);
-      xhr.setRequestHeader("Accept", "application/json");
+      xhr.open("PUT", url, true);
+      xhr.timeout = 20 * 60 * 1000;
+      xhr.setRequestHeader("Content-Type", contentType);
       xhr.upload.addEventListener("progress", function (item) {
         if (item.lengthComputable) progress(meter, (item.loaded / item.total) * 100);
       });
       xhr.addEventListener("load", function () {
-        const body = parseJson(xhr);
-        if (xhr.status >= 200 && xhr.status < 300) {
-          progress(meter, 100);
-          text(output, body.message || "تم رفع الملف وربطه بالدرس بنجاح.", "success");
-          window.setTimeout(function () {
-            window.location.assign(body.return_to || window.location.href);
-          }, 500);
-          return;
-        }
-        text(output, body.detail || "تعذر رفع الملف. راجع النوع والحجم وإعداد التخزين.", "error");
-        if (button) button.disabled = false;
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error("r2_put_" + xhr.status));
       });
-      xhr.addEventListener("error", function () {
-        text(output, "انقطع الاتصال أثناء رفع الملف. أعد المحاولة.", "error");
-        if (button) button.disabled = false;
-      });
+      xhr.addEventListener("timeout", function () { reject(new Error("r2_timeout")); });
+      xhr.addEventListener("error", function () { reject(new Error("r2_network")); });
+      xhr.send(file);
+    });
+  }
+
+  async function directMediaUpload(form, file, csrf, output, meter) {
+    const lesson = form.querySelector("select[name=lesson_id]");
+    const lessonId = lesson && lesson.value;
+    const initUrl = form.action.replace(/\/media$/, "/media-upload/init");
+    const finalizeUrl = form.action.replace(/\/media$/, "/media-upload/finalize");
+    text(output, "يتم تجهيز رفع مباشر وآمن إلى التخزين…", "info");
+    const init = await appJson(initUrl, csrf, {
+      lesson_id: Number(lessonId),
+      file_name: file.name,
+      file_size: file.size,
+      content_type: file.type || "application/octet-stream",
+    });
+    let putFailure = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await putDirect(init.upload_url, file, init.content_type, meter);
+        putFailure = null;
+        break;
+      } catch (error) {
+        putFailure = error;
+        text(output, "تعذر جزء من الاتصال بالتخزين؛ محاولة " + (attempt + 2) + " من 3…", "info");
+        await new Promise(function (resolve) { window.setTimeout(resolve, 800 * Math.pow(2, attempt)); });
+      }
+    }
+    // A browser CORS/network error can hide a successful PUT response. Finalize
+    // once before falling back; the server will verify object size/signature.
+    try {
+      const done = await appJson(finalizeUrl, csrf, { upload_token: init.upload_token });
+      progress(meter, 100);
+      return done;
+    } catch (finalizeError) {
+      if (!putFailure) throw finalizeError;
+      putFailure.status = putFailure.status || finalizeError.status || 0;
+      putFailure.serverMessage = finalizeError.message;
+      throw putFailure;
+    }
+  }
+
+  function formUpload(form) {
+    const output = form.querySelector("[data-upload-message]");
+    const meter = form.querySelector("[data-upload-progress]");
+    const button = form.querySelector("button[type=submit],button:not([type])");
+    const fileInput = form.querySelector("input[type=file]");
+    const csrfInput = form.querySelector("input[name=csrf]");
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      const file = fileInput && fileInput.files && fileInput.files[0];
+      if (!file) return;
       if (button) button.disabled = true;
-      text(output, "جارٍ رفع الملف… لا تغلق الصفحة.", "info");
       progress(meter, 0);
-      xhr.send(new FormData(form));
+      if (form.dataset.directMediaUpload === "1") {
+        try {
+          const body = await directMediaUpload(form, file, csrfInput.value, output, meter);
+          text(output, body.message || "تم رفع الملف وربطه بالدرس بنجاح.", "success");
+          window.setTimeout(function () { window.location.reload(); }, 500);
+          return;
+        } catch (error) {
+          if ([400, 403, 413, 415].includes(Number(error.status || 0))) {
+            text(output, error.message || "الملف غير صالح للرفع.", "error");
+            if (button) button.disabled = false;
+            return;
+          }
+          text(output, "تعذر الرفع المباشر؛ سيتم استخدام المسار الاحتياطي تلقائيًا.", "info");
+        }
+      }
+      serverFormUpload(form, output, meter, button);
     });
   }
 
@@ -170,7 +256,11 @@
       body: JSON.stringify(body || {}),
     });
     const payload = await response.json().catch(function () { return {}; });
-    if (!response.ok) throw new Error(payload.detail || payload.error || "تعذر إكمال العملية.");
+    if (!response.ok) {
+      const error = new Error(payload.detail || payload.error || "تعذر إكمال العملية.");
+      error.status = response.status;
+      throw error;
+    }
     return payload;
   }
 

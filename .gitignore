@@ -1,0 +1,20 @@
+# secrets / runtime state
+.env
+.env.*
+!.env.example
+!.env.railway.example
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.pid
+*.pyc
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+*.pem
+*.key
+*.p12
+*.pfx

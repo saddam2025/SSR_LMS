@@ -1,12 +1,16 @@
 import json
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy import event
 from sqlalchemy.orm import Session
 from .db import SessionLocal
 from .models import Notification, PushDevice
 
-_executor = ThreadPoolExecutor(max_workers=max(1, int(os.getenv("FCM_WORKERS", "2"))))
+_FCM_WORKERS = max(1, int(os.getenv("FCM_WORKERS", "2")))
+_FCM_MAX_PENDING = max(_FCM_WORKERS, int(os.getenv("FCM_MAX_PENDING", "256")))
+_executor = ThreadPoolExecutor(max_workers=_FCM_WORKERS, thread_name_prefix="mostashar-fcm")
+_pending_slots = threading.BoundedSemaphore(_FCM_MAX_PENDING)
 _firebase_app = None
 _init_attempted = False
 
@@ -83,13 +87,38 @@ def _capture_notifications(session, flush_context):
         if isinstance(obj, Notification):
             batch.append((obj.user_id, obj.title, obj.body, _notification_path(obj.kind), obj.kind))
 
+def _release_pending_slot(_future=None):
+    try:
+        _pending_slots.release()
+    except ValueError:
+        pass
+
+def _submit_push(item) -> bool:
+    """Queue FCM work without ever blocking a database commit/request thread.
+
+    In-app notifications are already committed before this runs. If the bounded
+    delivery queue is saturated, FCM is degraded gracefully instead of allowing
+    an unbounded executor backlog to consume process memory under broadcast load.
+    """
+    if not _pending_slots.acquire(blocking=False):
+        print("[push] delivery queue saturated; keeping in-app notification and skipping FCM")
+        return False
+    try:
+        future = _executor.submit(send_to_user, *item)
+        future.add_done_callback(_release_pending_slot)
+        return True
+    except Exception as exc:
+        _release_pending_slot()
+        print(f"[push] submit failed: {exc}")
+        return False
+
 @event.listens_for(Session, "after_commit")
 def _dispatch_notifications(session):
     batch = session.info.pop("_pending_push_notifications", [])
     if not configured():
         return
     for item in batch:
-        _executor.submit(send_to_user, *item)
+        _submit_push(item)
 
 @event.listens_for(Session, "after_rollback")
 def _discard_notifications(session):

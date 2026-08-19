@@ -1,66 +1,187 @@
-{% extends 'base.html' %}
-{% block body_class %}home-v95{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="/static/home-v96.css?v=20260818-1">{% endblock %}
-{% block content %}
-<section class="v95-hero">
-  <div class="v95-hero-scene">
-    <div class="v95-sky-orb orb-one"></div>
-    <div class="v95-sky-orb orb-two"></div>
-  </div>
-  <div class="v95-bigben"><span></span></div>
-  <div class="v95-uk-flag"><i></i></div>
-  <div class="v95-london-eye"><i></i><i></i></div>
-  <div class="v95-books">
-    <div class="book b1">Vocabulary</div>
-    <div class="book b2">Grammar</div>
-    <div class="book b3">Reading</div>
-    <div class="book b4">Writing</div>
+{% extends 'base.html' %}{% block body_class %}home-v95{% endblock %}{% block extra_head %}<link href="https://fonts.googleapis.com/css2?family=Lobster+Two:ital,wght@1,700&display=optional" rel="stylesheet"><link rel="stylesheet" href="/static/home-v96.css?v=20260818-wheel-typography-1"><link rel="stylesheet" href="/static/sherif-inspired-v96.css?v=20260818-wheel-redesign-2"><script src="/static/sherif-home-tools.js?v=20260818-wheel-redesign-2" defer></script>{% endblock %}{% block content %}
+<section class="v95-hero" aria-labelledby="v95-hero-title">
+  <div class="v95-hero-scene" aria-hidden="true">
+    <div class="v95-sky-orb orb-one"></div><div class="v95-sky-orb orb-two"></div>
+    <div class="v95-london-eye"><i></i><i></i><i></i><i></i></div>
+    <div class="v95-bigben"><span></span><b></b><i></i></div>
+    <div class="v95-uk-flag"><i></i></div>
   </div>
 
   <div class="v95-teacher-side">
     <div class="v95-teacher-halo"></div>
     <picture>
       <source srcset="/static/branding/ragab-seddik-portrait-v94.webp" type="image/webp">
-      <img src="/static/branding/ragab-seddik-portrait-v94.webp" alt="مستر رجب صديق - خبير تدريس اللغة الإنجليزية" width="1024" height="1365" decoding="async" fetchpriority="high">
+      <img src="/static/branding/ragab-seddik-hero-2026-fallback.jpg" alt="مستر رجب صديق" width="1024" height="1536" decoding="async" fetchpriority="high">
     </picture>
   </div>
 
   <div class="v95-hero-copy">
-    <span class="v95-script-mark">Almostashar</span>
-    <div class="v95-title-lockup"><h1>المستشار</h1></div>
+    <div class="v95-script-mark">Almostashar</div>
+    <div class="v95-title-lockup">
+      <span class="v95-cap">◆</span>
+      <h1 id="v95-hero-title">المستشار</h1>
+    </div>
     <div class="v95-teacher-name">مستر رجب صديق</div>
     <div class="v95-english-line">Al-Mostashar in English</div>
     <div class="v95-stage-line">الصف الأول والثاني والثالث الثانوي وبكالوريا</div>
-    <p class="v95-tagline">ابدأ رحلتك نحو التفوق .. بخطوات مدروسة</p>
+    <p class="v95-tagline">ابدأ رحلتك نحو التفوق .. بخطوات واثقة</p>
     <div class="v95-hero-actions">
-      {% if user %}
-        <a class="v95-primary-btn" href="/dashboard">▶ ادخل إلى لوحتك</a>
-      {% else %}
-        <a class="v95-primary-btn" href="/register">▶ ابدأ التعلم الآن</a>
-      {% endif %}
-      <a class="v95-secondary-btn" href="https://wa.me/201060309494" target="_blank" rel="noopener">تواصل واتساب</a>
+      {% if user %}<a class="v95-primary-btn" href="/dashboard"><span>▶</span> ادخل إلى لوحتك</a>{% else %}<a class="v95-primary-btn" href="/register"><span>▶</span> ابدأ التعلم الآن</a>{% endif %}
+      <a class="v95-secondary-btn" href="#courses"><span>●</span> تعرف على المنصة</a>
     </div>
+  </div>
+
+  <div class="v95-books" aria-hidden="true">
+    <span class="book b1">Vocabulary</span><span class="book b2">Grammar</span><span class="book b3">Reading</span><span class="book b4">Writing</span><span class="book b5">Skills</span>
   </div>
 </section>
 
 <div class="v95-underhero">
-  <div class="v95-stats">
-    <div><span class="v95-stat-icon">4</span><div><strong>4</strong><small>مسارات دراسية</small></div></div>
-    <div><span class="v95-stat-icon">⏱</span><div><strong>24/7</strong><small>تعلم في أي وقت</small></div></div>
-    <div><span class="v95-stat-icon gold">A+</span><div><strong>A+</strong><small>هدفنا الإتقان</small></div></div>
-    <div><span class="v95-stat-icon">✓</span><div><strong>100%</strong><small>متابعة مستمرة</small></div></div>
-  </div>
-  <div class="v95-quote-band">
-    <span class="v95-quote-mark">”</span>
-    <p>الإنجليزي مش حفظ .. الإنجليزي فهم وتطبيق واستمرار.</p>
+  <section class="v95-stats" aria-label="إحصائيات المنصة">
+    <div><span class="v95-stat-icon gold">★</span><strong>أوائل الطلاب</strong><small>نصنع قصة نجاحك</small></div>
+    <div><span class="v95-stat-icon">▶</span><strong>+5,000</strong><small>محاضرة ودرس</small></div>
+    <div><span class="v95-stat-icon">●●●</span><strong>+25,000</strong><small>طالب وطالبة</small></div>
+    <div><span class="v95-stat-icon">▣</span><strong>+4</strong><small>المسارات الدراسية</small></div>
+  </section>
+
+  <section class="v95-quote-band" aria-label="رسالة مستر رجب صديق">
+    <div class="v95-quote-mark">“</div>
+    <p>ما كُتب لك سيأتيك.. فاجتهد وثق بالله واستمر في المحاولة</p>
     <strong>مستر رجب صديق</strong>
-  </div>
+  </section>
 </div>
+
+<section class="v95-feature-ribbon" aria-label="مميزات المنصة">
+  <a href="/#courses"><span>▶</span><b>محاضرات تفاعلية</b><small>جودة عالية</small></a>
+  <a href="{% if user %}/support{% else %}/login{% endif %}"><span>◉</span><b>دعم فني</b><small>معك دائمًا</small></a>
+  <a href="{% if user %}/dashboard{% else %}/login{% endif %}"><span>↗</span><b>متابعة التقدم</b><small>تقارير دقيقة</small></a>
+  <a href="{% if user %}/search{% else %}/english-lab#quick-quiz{% endif %}"><span>▣</span><b>اختبارات إلكترونية</b><small>قياس مستواك</small></a>
+  <a href="{% if user and user.role == 'student' %}/study-plan{% elif user %}/dashboard{% else %}/register{% endif %}"><span>◷</span><b>مذاكرة منظمة</b><small>خطة دراسية</small></a>
+  <a href="https://www.youtube.com/@Ragab.Seddik" target="_blank" rel="noopener"><span class="youtube-dot">▶</span><b>قناة اليوتيوب</b><small>شرح مجاني</small></a>
+</section>
+
+
+<section class="sherif-inspired-hub" id="english-hub" aria-labelledby="english-hub-title">
+  <div class="mostashar-wheel-shell" aria-labelledby="mostashar-wheel-title">
+    <div class="mostashar-wheel-heading">
+      <span class="mostashar-wheel-kicker">ENGLISH SKILLS</span>
+      <h2 id="mostashar-wheel-title">اختار مهارتك وابدأ التدريب</h2>
+      <p>أربع بوابات أساسية توصلك مباشرة إلى أدوات التدريب داخل مختبر المستشار.</p>
+    </div>
+    <div class="mostashar-skill-wheel" aria-label="عجلة مهارات اللغة الإنجليزية">
+      <div class="skill-wheel-orbit orbit-one" aria-hidden="true"></div>
+      <div class="skill-wheel-orbit orbit-two" aria-hidden="true"></div>
+
+      <a class="skill-wheel-node node-vocab" href="/english-lab#flashcards" aria-label="Vocabulary - افتح الفلاش كاردز">
+        <span class="skill-wheel-icon" aria-hidden="true">Aa</span>
+        <span class="skill-wheel-label"><b>Vocabulary</b><small>المفردات</small></span>
+      </a>
+      <a class="skill-wheel-node node-tenses" href="/english-lab#tense-lab" aria-label="Tenses - افتح مختبر الأزمنة">
+        <span class="skill-wheel-icon" aria-hidden="true">T</span>
+        <span class="skill-wheel-label"><b>Tenses</b><small>الأزمنة</small></span>
+      </a>
+      <a class="skill-wheel-node node-grammar" href="/english-lab#sentence-builder" aria-label="Grammar - افتح مكوّن الجملة">
+        <span class="skill-wheel-icon" aria-hidden="true">G</span>
+        <span class="skill-wheel-label"><b>Grammar</b><small>القواعد</small></span>
+      </a>
+      <a class="skill-wheel-node node-speaking" href="/english-lab#speaking" aria-label="Speaking - افتح تدريب النطق">
+        <span class="skill-wheel-icon" aria-hidden="true">♪</span>
+        <span class="skill-wheel-label"><b>Speaking</b><small>النطق والاستماع</small></span>
+      </a>
+
+      <a class="skill-wheel-center" href="/english-lab" aria-label="افتح مختبر الإنجليزي كاملًا">
+        <span class="skill-wheel-photo"><img src="/static/branding/ragab-seddik-portrait-v94.webp" alt="مستر رجب صديق" width="460" height="690" loading="lazy" decoding="async"></span>
+        <span class="skill-wheel-center-copy"><b>English Skills</b><small>مع المستشار رجب صديق</small></span>
+      </a>
+    </div>
+    <div class="mostashar-wheel-hint" aria-hidden="true"><span>اضغط على أي مهارة</span><i>↙</i></div>
+  </div>
+  <div class="sherif-quick" aria-label="روابط البدء والخدمات">
+    <h2 id="english-hub-title" class="sr-only">بوابة اللغة الإنجليزية والخدمات السريعة</h2>
+    <div class="sherif-main-actions">
+      {% if user %}<a class="primary" href="/dashboard">ادخل إلى لوحتك</a>{% else %}<a class="primary" href="/register">ابدأ مجانًا دلوقتي</a><a class="secondary" href="/login">تسجيل دخول</a>{% endif %}
+    </div>
+    <div class="sherif-quick-grid">
+      <a class="sherif-quick-card" href="https://wa.me/201060309494?text=%D8%A3%D8%B1%D9%8A%D8%AF%20%D9%85%D8%B9%D8%B1%D9%81%D8%A9%20%D8%A3%D9%82%D8%B1%D8%A8%20%D9%85%D9%83%D8%A7%D9%86%20%D9%84%D9%84%D8%AD%D8%B6%D9%88%D8%B1" target="_blank" rel="noopener"><span class="icon">⌖</span><span><b>أماكن الحضور</b><small>اعرف أقرب مكان من الدعم</small></span></a>
+      <a class="sherif-quick-card gold" href="https://wa.me/201060309494?text=%D8%A3%D8%B1%D9%8A%D8%AF%20%D9%85%D8%B9%D8%B1%D9%81%D8%A9%20%D9%85%D9%86%D8%A7%D9%81%D8%B0%20%D8%A8%D9%8A%D8%B9%20%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D8%B4%D8%A7%D8%B1" target="_blank" rel="noopener"><span class="icon">▮</span><span><b>منافذ بيع الكتاب</b><small>تواصل لمعرفة أقرب منفذ</small></span></a>
+      <a class="sherif-quick-card teal full" href="{% if user %}/support{% else %}https://wa.me/201060309494?text=%D8%A3%D8%AD%D8%AA%D8%A7%D8%AC%20%D8%AF%D8%B9%D9%85%20%D9%81%D9%86%D9%8A%20%D9%81%D9%8A%20%D9%85%D9%86%D8%B5%D8%A9%20%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D8%B4%D8%A7%D8%B1{% endif %}"{% if not user %} target="_blank" rel="noopener"{% endif %}><span class="icon">◉</span><span><b>الدعم</b><small>فني · حسابات · اشتراكات</small></span></a>
+    </div>
+  </div>
+</section>
+
+<section class="sherif-lab-preview" id="interactive-lab" aria-labelledby="interactive-lab-title">
+  <span class="sherif-kicker">● الميزة اللي هتدربك بإيدك</span>
+  <h2 id="interactive-lab-title">مختبر <em>الإنجليزي</em> التفاعلي</h2>
+  <p>كوّن الجملة، جرّب الأزمنة، اسمع النطق، راجع الكلمات، حل كويزات سريعة، والعب ألعاب تدريبية — كل زر يفتح أداة فعلية.</p>
+  <div class="sherif-lab-chips" aria-label="أدوات مختبر الإنجليزي">
+    <a class="featured" href="/english-lab#tense-lab">◷ مختبر الأزمنة</a><a href="/english-lab#flashcards">▣ فلاش كاردز</a><a href="/english-lab#quick-quiz">؟ كويز تفاعلي</a><a href="/english-lab#sentence-builder">≡ كوّن الجملة</a><a href="/english-lab#speaking">🎙 النطق والاستماع</a><a href="/english-lab#listening">🎧 اختبار الاستماع</a><a href="/english-lab#irregular">T الأفعال الشاذة</a><a href="/english-lab#matching">⌘ لعبة التوصيل</a><a href="/english-lab#reading">▤ قطعة استيعاب</a><a href="/english-lab#letters">↕ ترتيب الحروف</a>
+  </div>
+  <a class="open-lab" href="/english-lab">افتح المختبر كاملًا ←</a>
+</section>
+
+<section class="sherif-learning-studio" id="golden-learning" aria-labelledby="golden-learning-title">
+  <div class="sherif-studio-heading">
+    <span class="sherif-kicker">● تدريب ومراجعة ذكية</span>
+    <h2 id="golden-learning-title">رحلتك المنظمة لإتقان <em>الإنجليزي</em></h2>
+    <p>أدوات سريعة تساعدك على النطق الصحيح والمراجعة اليومية وتثبيت الكلمات — بهوية المستشار ومربوطة بأدوات المنصة.</p>
+    <div class="sherif-studio-shortcuts" aria-label="اختصارات أدوات المراجعة">
+      <a href="#speaking-dictionary">جرّب القاموس الناطق</a>
+      <a href="#review-strategies">استراتيجيات المراجعة</a>
+      <a href="/english-lab">افتح مختبر الإنجليزي</a>
+    </div>
+  </div>
+  <div class="sherif-studio-grid">
+    <article class="speaking-dictionary-card" id="speaking-dictionary">
+      <span class="studio-icon" aria-hidden="true">🔊</span>
+      <h3>القاموس الناطق</h3>
+      <p>اكتب أي كلمة أو جملة إنجليزية واسمع النطق، أو جرّب الكلمات المقترحة.</p>
+      <div class="dictionary-controls">
+        <label for="home-dictionary-accent">النطق</label>
+        <select id="home-dictionary-accent" aria-label="اختيار لهجة النطق"><option value="en-US">أمريكي</option><option value="en-GB">بريطاني</option></select>
+        <div class="dictionary-input-row"><input id="home-dictionary-input" type="text" maxlength="120" value="Hello" placeholder="اكتب كلمة إنجليزية" aria-label="كلمة أو جملة للنطق"><button id="home-dictionary-speak" type="button">استمع للنطق</button></div>
+      </div>
+      <div class="dictionary-suggestions" aria-label="كلمات مقترحة"><button type="button" data-pronounce-word="Hello">Hello</button><button type="button" data-pronounce-word="Beautiful">Beautiful</button><button type="button" data-pronounce-word="Amazing">Amazing</button><button type="button" data-pronounce-word="Study">Study</button><button type="button" data-pronounce-word="Review">Review</button><button type="button" data-pronounce-word="Pronunciation">Pronunciation</button><button type="button" data-pronounce-word="Modern">Modern</button><button type="button" data-pronounce-word="Simple">Simple</button><button type="button" data-pronounce-word="Focus">Focus</button><button type="button" data-pronounce-word="Success">Success</button></div>
+      <p id="home-dictionary-status" class="dictionary-status" role="status" aria-live="polite"></p>
+    </article>
+    <article class="review-routine-card golden-dictionary-summary">
+      <span class="studio-icon gold" aria-hidden="true">✦</span>
+      <h3>مراجعة يومية من غير تعقيد</h3>
+      <p>ابدأ بالقاموس، طبّق استراتيجية قصيرة، وبعدها اختبر نفسك داخل مختبر الإنجليزي.</p>
+      <div class="routine-steps"><span><b>1</b><small>اسمع</small></span><span><b>2</b><small>راجع</small></span><span><b>3</b><small>طبّق</small></span></div>
+      <a href="/english-lab#quick-quiz">اختبر نفسك الآن ←</a>
+    </article>
+  </div>
+
+  <div class="sherif-strategy-group" id="review-strategies">
+    <div class="strategy-group-heading"><span>✨</span><div><h3>أفكار ذهبية ومنظمة</h3><p>خطوات بسيطة وحديثة تناسب كل طالب وتركّز على الأساسيات بطرق عملية.</p></div></div>
+    <div class="sherif-strategy-grid golden-ideas-grid">
+      <article><span>🧠</span><h3>خريطة ذهنية يومية</h3><p>موضوع واحد = 5 كلمات. اربط كل كلمة بصورة أو مثال قصير ليسهل استرجاعها.</p></article>
+      <article><span>⏱</span><h3>روتين 10-20-30</h3><p>10 دقائق استماع، 20 دقيقة قراءة، و30 دقيقة مراجعة نطق وتطبيق.</p><a href="/english-lab#listening">ابدأ الروتين</a></article>
+      <article><span>🔁</span><h3>التعلّم بالنطق المباشر</h3><p>استمع للكلمة وكررها فورًا، ثم قارن المحاولة وحسّن مخارج الحروف.</p><a href="/english-lab#speaking">ابدأ النطق المباشر</a></article>
+      <article><span>🗂</span><h3>بطاقات مراجعة مرئية</h3><p>اكتب الكلمة مع جملة قصيرة، ثم استخدم فلاش كاردز المختبر للمراجعة السريعة.</p><a href="/english-lab#flashcards">افتح الفلاش كاردز</a></article>
+      <article><span>↻</span><h3>مراجعة متباعدة</h3><p>راجع بعد ساعة، ثم يوم، ثم أسبوع حتى تنتقل الكلمات للذاكرة طويلة المدى.</p></article>
+      <article><span>🤝</span><h3>التحدي الثنائي الصوتي</h3><p>كل طالب ينطق 5 كلمات والآخر يكررها ويصححها، ثم يتم تبديل الأدوار.</p><a href="/english-lab#speaking">ابدأ التحدي</a></article>
+    </div>
+  </div>
+
+  <div class="sherif-strategy-group continuous-review-group">
+    <div class="strategy-group-heading"><span>🔄</span><div><h3>مراجعات دائمة ومستمرة</h3><p>طرق سريعة تثبت المعلومات من غير ملل وتخلي المراجعة عادة يومية.</p></div></div>
+    <div class="sherif-strategy-grid continuous-review-grid">
+      <article><span>📅</span><h3>جدول المراجعة الأسبوعي</h3><p>خصص 15 دقيقة يوميًا لمراجعة الكلمات القديمة قبل تعلم الجديدة.</p><a href="{% if user and user.role == 'student' %}/study-plan{% else %}/register{% endif %}">نظّم مراجعتك</a></article>
+      <article><span>🎙</span><h3>مراجعة الصدى الصوتي</h3><p>سجّل صوتك وأنت تنطق الكلمات ثم قارنه بالنطق الصحيح من القاموس.</p><a href="/english-lab#speaking">تدرّب على النطق</a></article>
+      <article><span>📦</span><h3>الصناديق الذكية</h3><p>قسّم الكلمات إلى سهلة ومتوسطة وصعبة، وراجع الصعب يوميًا والمتوسط كل عدة أيام.</p></article>
+      <article><span>60</span><h3>تحدي الدقيقة الواحدة</h3><p>اكتب أو انطق أكبر عدد من الكلمات التي تتذكرها خلال 60 ثانية ثم كرر التحدي.</p><a href="/english-lab#quick-quiz">اختبر سرعتك</a></article>
+      <article class="strategy-featured"><span>🔊</span><h3>القاموس الناطق الذهبي</h3><p>اختر النطق الأمريكي أو البريطاني، واستمع وكرر فورًا للمراجعة اليومية السريعة.</p><a href="#speaking-dictionary">جرّب القاموس الآن</a></article>
+    </div>
+    <blockquote class="strategy-motivation">المراجعة المستمرة بطرق بسيطة تحوّل الضعف إلى قوة. استخدم القاموس الناطق يوميًا وطبّق التكرار المتباعد، وهتلاحظ الفرق مع الاستمرار.</blockquote>
+  </div>
+</section>
+
 
 <section class="wael-section" id="grades">
   <div class="wael-section-heading">
     <div><span class="wael-section-kicker">ابدأ من مستواك</span><h2>اختار صفك الدراسي</h2></div>
-    <p>3 مسارات واضحة للمرحلة الثانوية، وكل مسار يجمع الشرح والتدريب والاختبارات والمتابعة.</p>
+    <p>4 مسارات واضحة للمرحلة الثانوية، وكل مسار يجمع الشرح والتدريب والاختبارات والمتابعة.</p>
   </div>
   <div class="wael-grade-grid">
     <a class="wael-grade-card" href="#courses"><span class="wael-grade-index">01</span><small>المرحلة الثانوية</small><h3>الصف الأول الثانوي</h3><p>تأسيس قوي في Grammar وVocabulary وReading وWriting مع تدريبات بعد كل درس.</p><b>شوف الكورسات ←</b></a>
@@ -71,13 +192,21 @@
 </section>
 
 <section class="wael-section premium-courses" id="courses">
-  <div class="wael-section-heading">
-    <div><span class="wael-section-kicker">المحتوى الدراسي</span><h2>الكورسات المتاحة</h2></div>
-    <p>اختر الكورس المناسب لصفك، شاهد المحتوى، حل الاختبارات، وكمّل من حيث توقفت.</p>
+  <div class="wael-section-heading sherif-course-heading">
+    <div><span class="wael-section-kicker">المحتوى الدراسي</span><h2>أهم الكورسات اللي جمعناهالك هنا 👀</h2></div>
+    <p>اختار صفك وشوف الكورس المناسب، وبعدها كمل الشرح والتدريب والاختبارات من حسابك.</p>
   </div>
-  <div class="wael-course-grid">
+  <div class="sherif-course-filters" data-course-filters aria-label="تصفية الكورسات حسب الصف">
+    <button type="button" class="active" data-course-filter="all" aria-pressed="true">كل الكورسات</button>
+    <button type="button" data-course-filter="first">أولى ثانوي</button>
+    <button type="button" data-course-filter="second-general">تانية ثانوي عام</button>
+    <button type="button" data-course-filter="second-bac">تانية بكالوريا</button>
+    <button type="button" data-course-filter="third">تالتة ثانوي</button>
+  </div>
+  <p class="sherif-course-filter-status" data-course-filter-status role="status" aria-live="polite"></p>
+  <div class="wael-course-grid" data-course-grid>
     {% for c in courses %}
-    <article class="wael-course-card">
+    <article class="wael-course-card" data-course-card data-grade="{% if 'الأول' in c.grade %}first{% elif 'بكالوريا' in c.grade %}second-bac{% elif 'الثاني' in c.grade %}second-general{% elif 'الثالث' in c.grade %}third{% else %}other{% endif %}">
       <div class="wael-course-cover premium-course-cover">
         <img src="/static/branding/ragab-seddik-course-card.webp" alt="{{c.title}} - مستر رجب صديق" width="640" height="640" loading="lazy" decoding="async">
         <span class="wael-course-grade">{{c.grade}}</span>
@@ -98,6 +227,118 @@
   </div>
 </section>
 
+
+<section class="sherif-teacher-section" id="about-ragab" aria-labelledby="about-ragab-title">
+  <div class="sherif-teacher-copy">
+    <span class="sherif-kicker">● اتعرف على مدرسك</span>
+    <h2 id="about-ragab-title">المستشار <em>رجب صديق</em></h2>
+    <p class="sherif-teacher-lead"><strong>مستر رجب صديق</strong> معلم خبير في تدريس اللغة الإنجليزية، حاصل على تمهيدي الماجستير في اللغة الإنجليزية من جامعة سوهاج، وحاصل أيضًا على دبلومة تربوية في تدريس اللغة الإنجليزية <bdi dir="ltr">Micro-teaching</bdi> من جامعة ستراثكلايد — اسكتلندا — المملكة المتحدة (بريطانيا).</p>
+
+    <div class="sherif-credential-grid" aria-label="مؤهلات وتخصصات مستر رجب صديق">
+      <article><span>🎓</span><div><b>تمهيدي الماجستير</b><small>في اللغة الإنجليزية — جامعة سوهاج</small></div></article>
+      <article><span>🇬🇧</span><div><b>دبلومة تربوية Micro-teaching</b><small>جامعة ستراثكلايد — اسكتلندا — المملكة المتحدة</small></div></article>
+      <article><span>📚</span><div><b>متخصص في المرحلة الثانوية</b><small>البكالوريا · الثانوية العامة · الأزهر الشريف</small></div></article>
+    </div>
+
+    <div class="sherif-teacher-offers">
+      <article class="platform-offer">
+        <span class="offer-tag">منصة المستشار</span>
+        <h3>مش بس شرح… دي رحلة تعلم كاملة</h3>
+        <ul>
+          <li>شرح وافٍ ومنظم لكل أجزاء المنهج.</li>
+          <li>حلول الواجبات مع الشرح التفصيلي لكل سؤال.</li>
+          <li>امتحانات أونلاين لقياس مستواك ومتابعة تقدمك.</li>
+        </ul>
+      </article>
+      <article class="youtube-offer">
+        <span class="offer-tag">قناة اليوتيوب</span>
+        <h3>محتوى مجاني يخدم كل المستويات</h3>
+        <ul>
+          <li><b>شرح مخصص:</b> مناسب للبكالوريا والثانوية العامة والأزهر.</li>
+          <li><b>فيديوهات قصيرة:</b> أهم الأسئلة المتوقعة في امتحانات الشهور والترم ونهاية العام.</li>
+          <li><b>تواصل مباشر:</b> متابعة الأسئلة والاستفسارات في التعليقات والرد عليها أولًا بأول.</li>
+        </ul>
+        <a class="teacher-youtube-link" href="https://www.youtube.com/@Ragab.Seddik" target="_blank" rel="noopener noreferrer">شاهد قناة اليوتيوب ▶</a>
+      </article>
+    </div>
+
+    <div class="sherif-teacher-actions">
+      <a class="teacher-join-link" href="{% if user %}/dashboard{% else %}/register{% endif %}">{% if user %}كمّل مع مستر رجب{% else %}انضم لطلاب المستشار{% endif %}</a>
+    </div>
+
+    <div class="teacher-social-block" aria-label="وسائل التواصل الرسمية لمنصة المستشار">
+      <span class="teacher-social-title">تابع المستشار على السوشيال ميديا</span>
+      <div class="teacher-social-strip">
+        <a class="social-facebook" href="https://www.facebook.com/Elmustashar.RS/" target="_blank" rel="noopener noreferrer" aria-label="صفحة المستشار على فيسبوك" title="Facebook"><span aria-hidden="true">f</span></a>
+        <a class="social-whatsapp" href="https://whatsapp.com/channel/0029VaeqHW88V0toN7GCLn2z" target="_blank" rel="noopener noreferrer" aria-label="قناة المستشار على واتساب" title="WhatsApp"><span aria-hidden="true">WA</span></a>
+        <a class="social-tiktok" href="https://www.tiktok.com/@ragab.seddik" target="_blank" rel="noopener noreferrer" aria-label="المستشار على تيك توك" title="TikTok"><span aria-hidden="true">♪</span></a>
+        <a class="social-youtube" href="https://www.youtube.com/@Ragab.Seddik" target="_blank" rel="noopener noreferrer" aria-label="قناة المستشار على يوتيوب" title="YouTube"><span aria-hidden="true">▶</span></a>
+        <a class="social-group" href="https://www.facebook.com/share/g/19bNfZ1YcQ/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" aria-label="جروب طلاب المستشار على فيسبوك" title="Facebook Group"><span aria-hidden="true">👥</span></a>
+        <a class="social-telegram" href="https://t.me/MrRagabSeddik" target="_blank" rel="noopener noreferrer" aria-label="المستشار على تليجرام" title="Telegram"><span aria-hidden="true">✈</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if reviews_enabled %}
+<section class="sherif-reviews-section" id="student-reviews" aria-labelledby="student-reviews-title">
+  <div class="sherif-reviews-heading">
+    <span class="sherif-kicker">● آراء حقيقية</span>
+    <h2 id="student-reviews-title">طلابنا <em>بيقولوا إيه</em></h2>
+    <p>آراء طلاب المستشار المنشورة بعد موافقتهم، عن تجربة الشرح والتدريب والمتابعة على المنصة.</p>
+  </div>
+  {% if reviews %}
+  <div class="sherif-review-stage" data-review-carousel>
+    <button class="review-nav prev" type="button" data-review-prev aria-label="الرأي السابق">‹</button>
+    <div class="sherif-review-track">
+      {% for x in reviews %}<article class="sherif-review-card{% if loop.first %} active{% endif %}" data-review-card>
+        <div class="review-quote-mark" aria-hidden="true">“</div>
+        <blockquote>{{x.review_text}}</blockquote>
+        <div class="review-student">
+          <span class="review-avatar" aria-hidden="true">{{x.student_name[:1]}}</span>
+          <div><strong>{{x.student_name}}</strong><small>{{x.grade or 'طالب بمنصة المستشار'}}</small></div>
+          <div class="review-stars" aria-label="التقييم {{x.rating}} من 5">{% for i in range(x.rating) %}★{% endfor %}{% for i in range(5-x.rating) %}☆{% endfor %}</div>
+        </div>
+      </article>{% endfor %}
+    </div>
+    <button class="review-nav next" type="button" data-review-next aria-label="الرأي التالي">›</button>
+    <div class="review-dots" aria-label="اختيار رأي">{% for x in reviews %}<button type="button" data-review-dot="{{loop.index0}}" class="{% if loop.first %}active{% endif %}" aria-label="الرأي {{loop.index}}"></button>{% endfor %}</div>
+  </div>
+  {% else %}
+  <div class="sherif-review-empty"><span>💬</span><strong>قسم آراء الطلاب جاهز</strong><p>أضف الآراء الحقيقية من لوحة الإدارة بعد الحصول على الموافقة، وستظهر هنا تلقائيًا بنفس التصميم.</p>{% if user and user.role in ['super_admin','admin'] %}<a href="/admin/homepage">إدارة آراء الطلاب</a>{% endif %}</div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="mostashar-benefits" id="platform-benefits" aria-labelledby="platform-benefits-title">
+  <div class="mostashar-marketing-head">
+    <span class="mostashar-marketing-kicker">تجربة تعلم متكاملة</span>
+    <h2 id="platform-benefits-title">مميزات <em>تفرق معاك</em> فعلاً</h2>
+    <p>مش مجرد فيديوهات — كل جزء في المنصة معمول عشان يساعدك تفهم، تتدرب، تعرف مستواك، وتكمل بخطوات واضحة.</p>
+  </div>
+  <div class="mostashar-benefit-grid">
+    <article><span class="benefit-icon gold" aria-hidden="true">✦</span><h3>مدعومة بالمساعد الذكي</h3><p>اسأل عن نقطة في الدرس، راجع أهم الأفكار، وارجع للمحتوى المرتبط بدل إجابات عامة بعيدة عن المنهج.</p></article>
+    <article><span class="benefit-icon" aria-hidden="true">✓</span><h3>تصحيح فوري للاختبارات</h3><p>تشوف درجتك فور التسليم، مع حساب درجات الأسئلة حسب وزن كل سؤال وتتبع محاولاتك بصورة واضحة.</p></article>
+    <article><span class="benefit-icon" aria-hidden="true">▤</span><h3>منهج منظم لكل صف</h3><p>الكورسات والدروس والواجبات والاختبارات مترتبة حسب المسار الدراسي عشان تعرف تبدأ منين وتكمل إزاي.</p></article>
+    <article><span class="benefit-icon" aria-hidden="true">◎</span><h3>تركيز حقيقي على الامتحان</h3><p>اختبارات ومراجعات وتدريب متدرج يساعدك تنتقل من فهم الفكرة لتطبيقها تحت ضغط الامتحان.</p></article>
+    <article><span class="benefit-icon gold" aria-hidden="true">▣</span><h3>مذكرات وملخصات</h3><p>ملفات ومواد مساندة مرتبطة بالمحتوى، مع وصول محمي للطالب المشترك من داخل حسابه.</p></article>
+    <article><span class="benefit-icon" aria-hidden="true">↗</span><h3>متابعة وتقرير تقدم</h3><p>لوحة الطالب وولي الأمر تعرض التقدم والدرجات والنشاط بدل ما تفضل النتيجة مجرد رقم منفصل.</p></article>
+    <article><span class="benefit-icon" aria-hidden="true">◈</span><h3>دعم وقت ما تحتاج</h3><p>مركز دعم وروابط تواصل رسمية داخل المنصة، مع مجتمع واتساب مخصص لكل صف دراسي.</p></article>
+    <article><span class="benefit-icon" aria-hidden="true">⌁</span><h3>تتعلم بأمان من أجهزتك</h3><p>جلسات محمية وضوابط للأجهزة والعلامة المائية على المحتوى للحد من مشاركة الحسابات والمواد.</p></article>
+    <article><span class="benefit-icon gold" aria-hidden="true">★</span><h3>محتوى وتجربة سريعة</h3><p>واجهة خفيفة، تحميل مباشر للملفات إلى التخزين، وتصميم متجاوب يناسب الكمبيوتر والتابلت والموبايل.</p></article>
+  </div>
+</section>
+
+<section class="sherif-ai-section" id="smart-assistant" aria-labelledby="smart-assistant-title">
+  <div class="sherif-ai-copy">
+    <span class="sherif-kicker">● جديد · مدعوم بالذكاء الاصطناعي</span>
+    <h2 id="smart-assistant-title">مساعد المستشار الذكي معاك <em>24 ساعة</em> 🤖</h2>
+    <p>مساعد ذكي داخل رحلة التعلم: يوجّه الطالب لنقاط الضعف والمحتوى المناسب، ويعمل مع نظام المساعد الموجود داخل الدروس والمقيد بمحتوى مستر رجب بدل إجابات عامة بعيدة عن المنهج.</p>
+    <a href="{% if user and user.role == 'student' %}/smart-tutor{% elif user %}/dashboard{% else %}/login{% endif %}">{% if user and user.role == 'student' %}جرّب المساعد الذكي دلوقتي{% elif user %}اذهب إلى لوحتك{% else %}سجّل دخول لتجربة المساعد{% endif %}</a>
+  </div>
+  <div class="sherif-ai-robot" aria-hidden="true"><div class="sherif-robot"><span class="antenna"></span><span class="base"></span></div></div>
+</section>
+
 <section class="wael-journey">
   <div class="wael-journey-heading"><span>خليك معانا في رحلة English</span><h2>نظام تعلم كامل يخليك فاهم، متدرب، وعارف مستواك</h2></div>
   <div class="wael-journey-grid">
@@ -108,17 +349,43 @@
   </div>
 </section>
 
-<section class="wael-why" id="why">
-  <div class="wael-why-intro">
-    <span class="wael-section-kicker">نظام كامل مش فيديوهات بس</span>
-    <h2>ليه English مع Mr / Ragab Seddik؟</h2>
-    <p>منصة تتابع الطالب من أول الشرح لحد الاختبار والتقرير، وتخلّيه عارف دائمًا الخطوة اللي بعدها.</p>
+<span id="platform-difference" class="section-anchor" aria-hidden="true"></span>
+<section class="mostashar-difference" id="why" aria-labelledby="platform-difference-title">
+  <div class="mostashar-marketing-head compact">
+    <span class="mostashar-marketing-kicker"><i aria-hidden="true"></i> الفرق واضح</span>
+    <h2 id="platform-difference-title">ليه <em>منصة المستشار</em>؟</h2>
+    <p>قارن بين تجربة مشاهدة محتوى عادية وبين نظام تعلم يجمع الشرح والتدريب والمتابعة والحماية في مكان واحد.</p>
   </div>
-  <div class="wael-why-grid">
-    <article><div class="wael-feature-icon">✓</div><small>تطبيق مباشر</small><h3>امتحان بعد كل درس</h3><p>أسئلة تفاعلية وتصحيح فوري يوضح الدرجة ونقاط القوة والضعف.</p></article>
-    <article><div class="wael-feature-icon">↗</div><small>متابعة شفافة</small><h3>تقرير لولي الأمر</h3><p>متابعة للمشاهدات والدرجات والتقدم بصورة واضحة ومنظمة.</p></article>
-    <article><div class="wael-feature-icon">AI</div><small>مذاكرة أذكى</small><h3>مساعد المستشار</h3><p>Flash Cards ومساعد مذاكرة مرتبط بمحتوى الدرس والواجب لمراجعة أسرع.</p></article>
-    <article><div class="wael-feature-icon">▶</div><small>تعلم تفاعلي</small><h3>أسئلة داخل الفيديو</h3><p>نقاط توقف واختبارات قصيرة أثناء الشرح مع تغذية راجعة فورية.</p></article>
+  <div class="mostashar-compare-wrap" role="region" aria-label="مقارنة منصة المستشار بالتجربة التقليدية" tabindex="0">
+    <table class="mostashar-compare-table">
+      <thead><tr><th scope="col">الميزة</th><th scope="col">تجربة تقليدية</th><th scope="col" class="ours">منصة المستشار</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">دروس وكورسات مرتبة حسب الصف</th><td><span class="compare-neutral">●</span><span class="sr-only">قد تتوفر</span></td><td><span class="compare-yes">✓</span><span class="sr-only">متوفر</span></td></tr>
+        <tr><th scope="row">تصحيح آلي فوري بدرجات موزونة</th><td><span class="compare-no">×</span><span class="sr-only">غير متوفر عادة</span></td><td><span class="compare-yes">✓</span><span class="sr-only">متوفر</span></td></tr>
+        <tr><th scope="row">مساعد ذكي مرتبط بمحتوى الدرس</th><td><span class="compare-no">×</span><span class="sr-only">غير متوفر عادة</span></td><td><span class="compare-yes">✓</span><span class="sr-only">متوفر</span></td></tr>
+        <tr><th scope="row">متابعة درجات وتقدم الطالب</th><td><span class="compare-no">×</span><span class="sr-only">غير متوفر عادة</span></td><td><span class="compare-yes">✓</span><span class="sr-only">متوفر</span></td></tr>
+        <tr><th scope="row">تقارير ومتابعة لولي الأمر</th><td><span class="compare-no">×</span><span class="sr-only">غير متوفر عادة</span></td><td><span class="compare-yes">✓</span><span class="sr-only">متوفر</span></td></tr>
+        <tr><th scope="row">حماية للمحتوى والجلسات والأجهزة</th><td><span class="compare-no">×</span><span class="sr-only">غير متوفر عادة</span></td><td><span class="compare-yes">✓</span><span class="sr-only">متوفر</span></td></tr>
+        <tr><th scope="row">مذكرات وملخصات وملفات مرتبطة بالدروس</th><td><span class="compare-neutral">●</span><span class="sr-only">قد تتوفر</span></td><td><span class="compare-yes">✓</span><span class="sr-only">متوفر</span></td></tr>
+        <tr><th scope="row">مجتمع ودعم رسمي لكل صف</th><td><span class="compare-no">×</span><span class="sr-only">غير متوفر عادة</span></td><td><span class="compare-yes">✓</span><span class="sr-only">متوفر</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="mostashar-compare-cta">
+    {% if user %}<a href="/dashboard">كمّل رحلتك على المنصة</a>{% else %}<a href="/register">ابدأ الآن وجرب بنفسك</a>{% endif %}
+  </div>
+</section>
+
+{% if reels_enabled and reels %}<section class="wael-section homepage-reels" id="reels"><div class="wael-section-heading"><div><span class="wael-section-kicker">ريلز المستشار</span><h2>لقطات سريعة ومفيدة</h2></div><p>مختارات قصيرة من المحتوى الرسمي، تُفتح عند الطلب حتى تظل الصفحة خفيفة وسريعة.</p></div><div class="reels-grid">{% for x in reels %}<a class="reel-card" href="{{x.url}}" target="_blank" rel="noopener noreferrer"><span class="reel-play">▶</span><small>REEL</small><h3>{{x.title}}</h3>{% if x.caption %}<p>{{x.caption}}</p>{% endif %}<b>شاهد الآن ↗</b></a>{% endfor %}</div></section>{% endif %}
+{% if honors_enabled and honors %}<section class="wael-section homepage-honors" id="honor-roll"><div class="wael-section-heading"><div><span class="wael-section-kicker">لوحة الشرف</span><h2>أوائل طلاب المستشار</h2></div><p>نحتفل بالاجتهاد والتميز، ويمكن للإدارة إظهار القائمة أو إخفاؤها في أي وقت.</p></div><div class="honor-grid">{% for x in honors %}<article class="honor-card"><span class="honor-rank">{{x.rank_label or loop.index}}</span><div><h3>{{x.student_name}}</h3><p>{{x.grade}}{% if x.score_text %} • <b>{{x.score_text}}</b>{% endif %}</p>{% if x.note %}<small>{{x.note}}</small>{% endif %}</div></article>{% endfor %}</div></section>{% endif %}
+
+<section class="grade-community" id="community" data-community-version="2026-08-17-four-groups-deploy-hotfix-v3">
+  <div class="section-head"><span>مجتمع المستشار</span><h2>انضم إلى مجموعتك الرسمية</h2><p>اختر صفك الدراسي للانضمام إلى جروب واتساب الرسمي.</p></div>
+  <div class="grade-community-grid" data-community-count="4" aria-label="جروبات مجتمع المستشار الرسمية">
+    <a data-grade="first-secondary" href="https://chat.whatsapp.com/CVTAGolYyuS0lzuGur3FAP" target="_blank" rel="noopener noreferrer"><b>الصف الأول الثانوي</b><span>انضم للجروب</span></a>
+    <a data-grade="second-secondary-general" href="https://chat.whatsapp.com/CsyWqET6j686jgQgN9FDY0" target="_blank" rel="noopener noreferrer"><b>الصف الثاني الثانوي عام</b><span>انضم للجروب</span></a>
+    <a data-grade="second-baccalaureate" href="https://chat.whatsapp.com/J704OEHi47yA6SKKMqjufn?s=cl&amp;p=a&amp;ilr=1" target="_blank" rel="noopener noreferrer"><b>الصف الثاني بكالوريا</b><span>انضم للجروب</span></a>
+    <a data-grade="third-secondary" href="https://chat.whatsapp.com/F49VBaXN1wyCQQZJcslJZd" target="_blank" rel="noopener noreferrer"><b>الصف الثالث الثانوي</b><span>انضم للجروب</span></a>
   </div>
 </section>
 
@@ -131,4 +398,6 @@
   <div><span>ابدأ من مستواك، مش من الأول</span><h2>حدد صفك، شوف الخطة، وابدأ رحلتك مع المستشار</h2></div>
   <div class="wael-cta-actions">{% if user %}<a class="ww-solid-btn large" href="/dashboard">اذهب إلى لوحتك</a>{% else %}<a class="ww-solid-btn large" href="/register">إنشاء حساب</a><a class="ww-outline-btn light" href="/login">تسجيل الدخول</a>{% endif %}</div>
 </section>
+
+<a class="home-ai-fab" href="{% if user and user.role == 'student' %}/smart-tutor{% elif user %}/dashboard{% else %}/register{% endif %}" aria-label="فتح مساعد المستشار الذكي"><span>🧠</span><b>المساعد الذكي</b></a>
 {% endblock %}

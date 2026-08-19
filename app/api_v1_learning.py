@@ -2,15 +2,22 @@ from datetime import datetime, timedelta
 import random
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 from sqlalchemy.orm import Session
-from .db import get_db
+from .db import engine, get_db
 from .models import Course, Enrollment, Homework, HomeworkSubmission, Lesson, LessonProgress, Notification, PointLedger, Question, Quiz, QuizAttempt, QuizQuestionSetting
 from .api_v1_common import user
 from .access import authorized_for_course, content_schedule_allows, lesson_access_state
 from .security import check_csrf
+from .services.quiz_grading import grade_answers, total_points as quiz_total_points
 
 router = APIRouter(tags=['api-v1-learning'])
+
+def _pg_xact_lock(db, namespace: int, entity_id: int):
+    if engine.dialect.name == "postgresql":
+        safe_entity = int(entity_id) & 0x7FFFFFFF
+        db.execute(text("SELECT pg_advisory_xact_lock(:ns, :entity)"), {"ns": int(namespace), "entity": safe_entity})
+
 
 def student(request: Request, db: Session):
     u=user(request,db)
@@ -58,12 +65,17 @@ def quiz_attempt(quiz_id:int, request:Request, db:Session=Depends(get_db)):
     if attempt and attempt.started_at+timedelta(minutes=qz.time_limit_minutes)<=now:
         attempt.status='expired'; attempt.submitted_at=now; db.commit(); attempt=None; request.session.pop(key,None)
     if not attempt:
-        existing=db.query(QuizAttempt).filter_by(user_id=u.id,quiz_id=quiz_id,status='in_progress').order_by(QuizAttempt.id.desc()).first()
+        _pg_xact_lock(db, 5507, (int(u.id) * 1000003 + int(quiz_id)))
+        existing=db.query(QuizAttempt).filter_by(user_id=u.id,quiz_id=quiz_id,status='in_progress').order_by(QuizAttempt.id.desc()).with_for_update().first()
         if existing and existing.started_at+timedelta(minutes=qz.time_limit_minutes)>now: attempt=existing
         else:
+            if existing:
+                existing.status='expired'; existing.submitted_at=now
             used=db.query(QuizAttempt).filter_by(user_id=u.id,quiz_id=quiz_id).count()
-            if used>=qz.max_attempts: raise HTTPException(403,'تم استنفاد عدد المحاولات')
-            total=db.query(Question).filter_by(quiz_id=quiz_id).count(); attempt=QuizAttempt(quiz_id=quiz_id,user_id=u.id,total=total,status='in_progress',started_at=now); db.add(attempt); db.commit(); db.refresh(attempt)
+            if used>=qz.max_attempts:
+                db.commit(); raise HTTPException(403,'تم استنفاد عدد المحاولات')
+            qs_for_total=db.query(Question).filter_by(quiz_id=quiz_id).all()
+            attempt=QuizAttempt(quiz_id=quiz_id,user_id=u.id,total=quiz_total_points(db,qs_for_total),status='in_progress',started_at=now); db.add(attempt); db.commit(); db.refresh(attempt)
         request.session[key]=attempt.id
     qs=db.query(Question).filter_by(quiz_id=quiz_id).all()
     metas={m.question_id:m for m in db.query(QuizQuestionSetting).filter(QuizQuestionSetting.question_id.in_([x.id for x in qs] or [-1])).all()}
@@ -76,20 +88,20 @@ def quiz_attempt(quiz_id:int, request:Request, db:Session=Depends(get_db)):
 def quiz_submit(quiz_id:int,payload:QuizSubmit,request:Request,db:Session=Depends(get_db)):
     u=student(request,db); csrf(request); qz=db.get(Quiz,quiz_id)
     if not qz or not qz.published or not content_schedule_allows(db,'quiz',qz.id) or not authorized_for_course(db,u,qz.course_id): raise HTTPException(403)
-    key=f'api_quiz_attempt_{quiz_id}'; aid=request.session.get(key); attempt=db.get(QuizAttempt,int(aid)) if aid else None
+    key=f'api_quiz_attempt_{quiz_id}'; aid=request.session.get(key)
+    _pg_xact_lock(db, 5507, (int(u.id) * 1000003 + int(quiz_id)))
+    attempt=db.query(QuizAttempt).filter(QuizAttempt.id==int(aid)).with_for_update().first() if aid else None
     if not attempt or attempt.user_id!=u.id or attempt.quiz_id!=quiz_id or attempt.status!='in_progress': raise HTTPException(409,'لا توجد محاولة اختبار نشطة')
     now=datetime.utcnow()
     if attempt.started_at+timedelta(minutes=qz.time_limit_minutes)<now:
         attempt.status='expired'; attempt.submitted_at=now; db.commit(); request.session.pop(key,None); raise HTTPException(408,'انتهى وقت الاختبار')
-    qs=db.query(Question).filter_by(quiz_id=quiz_id).all(); details=[]; correct=0
-    for q in qs:
-        selected=str(payload.answers.get(str(q.id),'')).upper()[:1]; ok=selected==str(q.correct).upper(); correct+=1 if ok else 0
-        opts={'A':q.option_a,'B':q.option_b,'C':q.option_c,'D':q.option_d}; details.append({'question_id':q.id,'selected':selected,'correct':str(q.correct).upper(),'correct_text':opts.get(str(q.correct).upper(),''),'is_correct':ok})
-    attempt.score=correct; attempt.total=len(qs); attempt.status='submitted'; attempt.submitted_at=now
-    pct=(correct/len(qs)*100) if qs else 0; award_once(db,u.id,30 if pct>=80 else 15,'إنهاء اختبار','quiz_attempt',attempt.id)
+    qs=db.query(Question).filter_by(quiz_id=quiz_id).all(); graded=grade_answers(db,qs,payload.answers)
+    score=graded['score']; total=graded['total']; pct=graded['percentage']; details=graded['details']
+    attempt.score=score; attempt.total=total; attempt.status='submitted'; attempt.submitted_at=now
+    award_once(db,u.id,30 if pct>=80 else 15,'إنهاء اختبار','quiz_attempt',attempt.id)
     if pct>=80: db.add(Notification(user_id=u.id,title='إنجاز جديد',body=f'حصلت على {pct:.0f}% في {qz.title}',kind='success'))
     db.commit(); request.session.pop(key,None)
-    return {'data':{'score':correct,'total':len(qs),'percentage':round(pct,1),'details':details}}
+    return {'data':{'score':score,'total':total,'percentage':round(pct,1),'correct_count':graded['correct_count'],'question_count':graded['question_count'],'details':details}}
 
 @router.get('/homeworks/{homework_id}')
 def homework_get(homework_id:int,request:Request,db:Session=Depends(get_db)):
@@ -104,7 +116,8 @@ def homework_submit(homework_id:int,payload:HomeworkSubmit,request:Request,db:Se
     if not h or not h.published or not content_schedule_allows(db,'homework',h.id) or not authorized_for_course(db,u,h.course_id): raise HTTPException(403)
     text=(payload.answer_text or '').strip()
     if len(text)<1 or len(text)>20000: raise HTTPException(400,'نص الإجابة غير صالح')
-    s=db.query(HomeworkSubmission).filter_by(homework_id=h.id,student_id=u.id).first(); first=not s or not bool(s.answer_text)
+    _pg_xact_lock(db, 5506, (int(u.id) * 1000003 + int(h.id)))
+    s=db.query(HomeworkSubmission).filter_by(homework_id=h.id,student_id=u.id).with_for_update().first(); first=not s or not bool(s.answer_text)
     if not s: s=HomeworkSubmission(homework_id=h.id,student_id=u.id); db.add(s)
     s.answer_text=text; s.status='submitted'; s.submitted_at=datetime.utcnow()
     if first: award_once(db,u.id,10,'تسليم واجب','homework',h.id)

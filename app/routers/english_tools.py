@@ -11,6 +11,15 @@ from ..services.student_rewards import touch_student_streak
 from ..services.template_rendering import render_template
 router=APIRouter()
 
+@router.get('/english-lab', response_class=HTMLResponse)
+def english_lab(request: Request, db: Session=Depends(get_db)):
+    """Public interactive English lab inspired by the requested reference experience.
+
+    The lab itself is client-side and intentionally public; account-only learning data remains
+    behind the existing authenticated /english-tools and /smart-tutor routes.
+    """
+    return render_template('english_lab.html', ctx(request, db))
+
 @router.get('/english-tools', response_class=HTMLResponse)
 def english_tools(request: Request, db: Session=Depends(get_db)):
     u=require_role(request,db,'student'); streak=touch_student_streak(db,u.id); now=datetime.utcnow()

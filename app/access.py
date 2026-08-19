@@ -60,6 +60,61 @@ def content_schedule_allows(db: Session, content_type: str, content_id: int, now
     return True
 
 
+def content_schedule_allows_bulk(db: Session, content_type: str, content_ids: list[int], now: datetime | None = None) -> set[int]:
+    """Batched equivalent of calling content_schedule_allows() once per id.
+
+    Same semantics, but issues a constant number of queries instead of 1-2 per
+    content item. Used by course_completion_status(), which was previously
+    re-checking schedules per lesson/quiz/homework (80-100+ queries per call on a
+    mid-sized course).
+    """
+    now = now or datetime.utcnow()
+    if not content_ids:
+        return set()
+
+    schedules = db.query(ContentSchedule).filter(
+        ContentSchedule.content_type == content_type,
+        ContentSchedule.content_id.in_(content_ids),
+    ).all()
+    schedule_by_id = {s.content_id: s for s in schedules}
+    allowed_direct = {cid for cid in content_ids if schedule_allows(schedule_by_id.get(cid), now)}
+
+    assignment_model = {
+        "lesson": LessonUnitAssignment,
+        "quiz": QuizUnitAssignment,
+        "homework": HomeworkUnitAssignment,
+    }.get(content_type)
+    id_field = {"lesson": "lesson_id", "quiz": "quiz_id", "homework": "homework_id"}.get(content_type)
+    if not assignment_model or not id_field or not allowed_direct:
+        return allowed_direct
+
+    assignments = db.query(assignment_model).filter(getattr(assignment_model, id_field).in_(allowed_direct)).all()
+    content_to_unit = {getattr(a, id_field): a.unit_id for a in assignments}
+    unit_ids = {uid for uid in content_to_unit.values() if uid is not None}
+    if not unit_ids:
+        return allowed_direct
+
+    units = {u.id: u for u in db.query(ContentUnit).filter(ContentUnit.id.in_(unit_ids)).all()}
+    unit_schedules = db.query(ContentSchedule).filter(
+        ContentSchedule.content_type == "unit",
+        ContentSchedule.content_id.in_(unit_ids),
+    ).all()
+    unit_schedule_by_id = {s.content_id: s for s in unit_schedules}
+
+    result = set()
+    for cid in allowed_direct:
+        unit_id = content_to_unit.get(cid)
+        if unit_id is None:
+            # No unit assignment for this item -> schedule check alone governs it,
+            # matching content_schedule_allows()'s behavior.
+            result.add(cid)
+            continue
+        unit = units.get(unit_id)
+        if unit and unit.published and schedule_allows(unit_schedule_by_id.get(unit_id), now):
+            result.add(cid)
+    return result
+
+
 def lesson_access_state(db: Session, user: User, lesson: Lesson, now: datetime | None = None) -> dict:
     now = now or datetime.utcnow()
     if user.role in STAFF_CONTENT_ROLES:

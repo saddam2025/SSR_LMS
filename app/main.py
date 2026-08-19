@@ -1,4 +1,5 @@
 import os, json, random, re, secrets, io, zipfile, html, csv, base64
+from contextlib import asynccontextmanager
 import httpx
 from urllib.parse import urlparse
 from datetime import datetime, timedelta
@@ -18,10 +19,10 @@ from .models import (
     Device, ActiveSession, LessonProgress, Subscription, Coupon, CouponRedemption,
     PaymentTransaction, Notification, MediaAsset, ParentStudent, Homework, HomeworkSubmission,
     StudentProfile, OTPChallenge, PointLedger, DiscussionPost, ActivationCode, ActivationRedemption, ActivationCodeBatch, ActivationCodeInventory, VocabularyItem, VocabularyReview, StudentStreak,
-    LessonCheckpoint, CheckpointAttempt, LessonFlashcard, StudyAssistantLog, OfflineLessonPolicy, OfflineGrant, CourseCategory, CourseCategoryAssignment, SupportTicket, SupportTicketMessage, LessonVideoProfile, QuestionBankItem, QuizQuestionSetting, CommunicationCampaign, CommunicationDelivery, StudentAttendance, LiveClass, LiveClassAttendance, StudentGroup, StudentGroupMembership, GroupCourseAssignment, GroupLiveClassAssignment, ContentUnit, LessonUnitAssignment, QuizUnitAssignment, HomeworkUnitAssignment, CourseAcademicPeriod, ContentSchedule, LessonDripRule, LessonAccessOverride, CourseCompletionPolicy, CourseCertificate, RevisionPlan, RevisionTask, RevisionTaskProgress, QuestionBankTaxonomy, QuestionTaxonomy, MockExamProfile, MockExamAttemptAnalysis, StudentRemediationPlan, StudentRemediationItem, PushDevice, HomepageFeature, HomepageReel, HomepageHonor
+    LessonCheckpoint, CheckpointAttempt, LessonFlashcard, StudyAssistantLog, OfflineLessonPolicy, OfflineGrant, CourseCategory, CourseCategoryAssignment, SupportTicket, SupportTicketMessage, LessonVideoProfile, QuestionBankItem, QuizQuestionSetting, CommunicationCampaign, CommunicationDelivery, StudentAttendance, LiveClass, LiveClassAttendance, StudentGroup, StudentGroupMembership, GroupCourseAssignment, GroupLiveClassAssignment, ContentUnit, LessonUnitAssignment, QuizUnitAssignment, HomeworkUnitAssignment, CourseAcademicPeriod, ContentSchedule, LessonDripRule, LessonAccessOverride, CourseCompletionPolicy, CourseCertificate, RevisionPlan, RevisionTask, RevisionTaskProgress, QuestionBankTaxonomy, QuestionTaxonomy, MockExamProfile, MockExamAttemptAnalysis, StudentRemediationPlan, StudentRemediationItem, PushDevice, HomepageFeature, HomepageReel, HomepageHonor, HomepageReview
 )
 from .payment import create_intention, configured as paymob_configured, merchant_reference, verify_transaction_hmac
-from .storage import save_upload_file, read_private_bytes
+from .storage import save_upload_file, presigned_get, read_private_bytes
 from .cloudflare_stream import extract_stream_uid, stream_edge_ready, stream_embed_path
 from .cloudflare_upload import (
     StreamUploadError, create_tus_upload, enforce_signed_video,
@@ -58,7 +59,7 @@ from .routers.english_tools import router as english_tools_router
 from .routers.discussion_admin import router as discussion_admin_router
 from .services.reports import student_performance_rows as service_student_performance_rows
 from .observability import configure_logging, metrics_middleware
-from .production import production_status, enforce_production_baseline
+from .production import production_status, enforce_production_core
 from .security import (
     verify_password, ensure_csrf, check_csrf, login_allowed, record_failed_login,
     clear_failed_logins, sign_lesson, verify_lesson_signature, create_session_token,
@@ -87,10 +88,26 @@ from .services.community import student_live_classes as service_student_live_cla
 from .services.academic_content import schedule_status as service_schedule_status
 
 configure_logging()
-enforce_production_baseline()
-ensure_schema()
+enforce_production_core()
+# Production schema preparation is performed once in Railway pre-deploy. Avoid
+# import-time DB DDL/network I/O in each Uvicorn worker. Local/test keeps create_all.
+if os.getenv("ENV", "development").lower() != "production":
+    ensure_schema()
 
-app = FastAPI(title="Ragab Seddik LMS", docs_url=None, redoc_url=None)
+# One lightweight Redis-stream consumer per web process handles durable external
+# communication tasks. Redis consumer-group semantics prevent duplicate workers
+# from processing the same queued item, and stale jobs are reclaimed after crashes.
+from .worker import start_background_worker, stop_background_worker
+
+@asynccontextmanager
+async def _app_lifespan(_app):
+    start_background_worker()
+    try:
+        yield
+    finally:
+        stop_background_worker()
+
+app = FastAPI(title="Ragab Seddik LMS", docs_url=None, redoc_url=None, lifespan=_app_lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=700)
 app.middleware("http")(metrics_middleware)
 IS_PRODUCTION = os.getenv("ENV") == "production"
@@ -110,7 +127,10 @@ app.add_middleware(
 if IS_PRODUCTION:
     base_host = urlparse(PUBLIC_BASE_URL).hostname or ""
     extra_hosts = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(dict.fromkeys([base_host, *extra_hosts])))
+    # Railway performs deployment healthchecks with this Host header. Keep it
+    # explicitly trusted so /ready cannot be rejected before traffic is promoted.
+    railway_health_host = "healthcheck.railway.app"
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(dict.fromkeys([base_host, railway_health_host, *extra_hosts])))
 
 # V59 separated frontend: allow only explicitly configured frontend origins.
 # Cookies remain HttpOnly and the API still performs server-side authorization.
@@ -197,10 +217,19 @@ async def security_headers(request: Request, call_next):
     video_hosts = [h.strip().lower() for h in os.getenv("VIDEO_ALLOWED_HOSTS", "").split(",") if h.strip()]
     frame_sources = " ".join(["'self'", *[f"https://{h}" for h in video_hosts], *[f"https://*.{h}" for h in video_hosts]]) if video_hosts else ("'self'" if IS_PRODUCTION else "'self' https:")
     resource_sources = " ".join(["'self'", *[f"https://{h}" for h in video_hosts], *[f"https://*.{h}" for h in video_hosts]]) if video_hosts else "'self'"
+    connect_sources = ["'self'", "https://upload.videodelivery.net", "https://*.upload.videodelivery.net"]
+    # Direct-to-R2 protected media uploads use a presigned PUT from the browser.
+    # CSP must permit only the configured private-storage endpoint; opening connect-src
+    # to arbitrary HTTPS hosts would weaken the XSS/data-exfiltration boundary.
+    s3_endpoint = os.getenv("S3_ENDPOINT_URL", "").strip()
+    if s3_endpoint:
+        parsed_s3 = urlparse(s3_endpoint)
+        if parsed_s3.scheme == "https" and parsed_s3.hostname:
+            connect_sources.append(f"https://{parsed_s3.hostname}")
     response.headers["Content-Security-Policy"] = (
         f"default-src 'self'; img-src {resource_sources} data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; "
         f"script-src 'self'; frame-src {frame_sources}; media-src {resource_sources} blob:; "
-        "connect-src 'self' https://upload.videodelivery.net https://*.upload.videodelivery.net; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+        f"connect-src {' '.join(dict.fromkeys(connect_sources))}; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
     )
     path = request.url.path
     if path.startswith("/static/"):
@@ -208,13 +237,30 @@ async def security_headers(request: Request, call_next):
         # short browser TTL so a deployment can never strand users on stale CSS/JS;
         # Cloudflare's Worker adds a deployment-versioned edge cache separately.
         response.headers["Cache-Control"] = "public, max-age=3600, stale-while-revalidate=86400"
+    elif path == "/":
+        # The public homepage contains operational links (official class groups).
+        # Never serve a stale HTML shell after a deployment through browser/CDN caches.
+        response.headers["Cache-Control"] = "no-store, no-cache, max-age=0, must-revalidate"
+        response.headers["Cloudflare-CDN-Cache-Control"] = "no-store"
+        response.headers["CDN-Cache-Control"] = "no-store"
+        response.headers["Surrogate-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        response.headers["X-Mostashar-Release"] = "V96-WHEEL-TYPOGRAPHY-REFRESH-20260818-01"
     elif path.startswith(("/admin", "/lesson", "/protected", "/dashboard", "/support", "/notifications", "/account")):
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
     else:
         response.headers["Cache-Control"] = "private, max-age=60"
     if os.getenv("ENV") == "production":
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+        hsts = "max-age=31536000"
+        include_subdomains = os.getenv("HSTS_INCLUDE_SUBDOMAINS", "false").lower() in {"1", "true", "yes", "on"}
+        preload = os.getenv("HSTS_PRELOAD", "false").lower() in {"1", "true", "yes", "on"}
+        if include_subdomains:
+            hsts += "; includeSubDomains"
+            if preload:
+                hsts += "; preload"
+        response.headers["Strict-Transport-Security"] = hsts
     return response
 
 from .request_context import (
@@ -563,3 +609,10 @@ app.include_router(certificates_router)
 app.include_router(english_tools_router)
 app.include_router(discussion_admin_router)
 app.include_router(learning_runtime_router)
+
+
+
+
+
+
+

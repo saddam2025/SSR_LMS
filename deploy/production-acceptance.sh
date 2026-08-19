@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
-API_BASE="${PRODUCTION_API_BASE:-https://api.ragab-seddik.com}"
-FRONTEND_BASE="${PRODUCTION_FRONTEND_BASE:-https://student.ragab-seddik.com}"
+API_BASE="${PRODUCTION_API_BASE:-https://ragab-seddik.com}"
+FRONTEND_BASE="${PRODUCTION_FRONTEND_BASE:-$API_BASE}"
 ORIGIN="${PRODUCTION_FRONTEND_ORIGIN:-$FRONTEND_BASE}"
 need(){ command -v "$1" >/dev/null 2>&1 || { echo "Missing command: $1" >&2; exit 2; }; }
 need curl
@@ -16,18 +16,22 @@ echo '[2/9] API readiness'
 curl -fsS --max-time 20 "$API_BASE/ready" >/dev/null
 
 echo '[3/9] Student frontend'
-curl -fsS -D "$tmp/front.headers" -o /dev/null --max-time 20 "$FRONTEND_BASE/student/"
+curl -fsS -D "$tmp/front.headers" -o /dev/null --max-time 20 "$FRONTEND_BASE/"
 
 echo '[4/9] Frontend security headers'
 grep -qi '^content-security-policy:' "$tmp/front.headers" || { echo 'Frontend CSP missing' >&2; exit 1; }
 grep -qi '^x-content-type-options: *nosniff' "$tmp/front.headers" || { echo 'Frontend nosniff missing' >&2; exit 1; }
 
-echo '[5/9] CORS credential preflight'
-curl -fsS -D "$tmp/cors.headers" -o /dev/null --max-time 20 -X OPTIONS \
-  -H "Origin: $ORIGIN" -H 'Access-Control-Request-Method: GET' \
-  -H 'Access-Control-Request-Headers: X-CSRF-Token' "$API_BASE/api/v1/session"
-grep -Fqi "access-control-allow-origin: $ORIGIN" "$tmp/cors.headers" || { echo 'CORS origin mismatch' >&2; exit 1; }
-grep -qi 'access-control-allow-credentials: *true' "$tmp/cors.headers" || { echo 'CORS credentials missing' >&2; exit 1; }
+echo '[5/9] CORS / same-origin contract'
+if [ "$FRONTEND_BASE" != "$API_BASE" ]; then
+  curl -fsS -D "$tmp/cors.headers" -o /dev/null --max-time 20 -X OPTIONS \
+    -H "Origin: $ORIGIN" -H 'Access-Control-Request-Method: GET' \
+    -H 'Access-Control-Request-Headers: X-CSRF-Token' "$API_BASE/api/v1/session"
+  grep -Fqi "access-control-allow-origin: $ORIGIN" "$tmp/cors.headers" || { echo 'CORS origin mismatch' >&2; exit 1; }
+  grep -qi 'access-control-allow-credentials: *true' "$tmp/cors.headers" || { echo 'CORS credentials missing' >&2; exit 1; }
+else
+  echo 'Same-origin deployment: CORS not required.'
+fi
 
 echo '[6/9] Reject foreign CORS origin'
 curl -sS -D "$tmp/bad-cors.headers" -o /dev/null --max-time 20 -X OPTIONS \

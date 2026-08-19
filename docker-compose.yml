@@ -29,7 +29,7 @@ services:
   web:
     build: .
     environment:
-      ENV: ${ENV:-development}
+      ENV: production
       APP_SECRET: ${APP_SECRET}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL}

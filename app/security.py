@@ -4,7 +4,10 @@ from datetime import datetime, timedelta
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 
-password_hash = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4)
+if os.getenv("ENV", "development").lower() == "test":
+    password_hash = PasswordHasher(time_cost=1, memory_cost=8192, parallelism=1)
+else:
+    password_hash = PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4)
 APP_SECRET = os.getenv("APP_SECRET", "dev-secret-change-this-immediately")
 MAX_DEVICES = int(os.getenv("MAX_DEVICES_PER_USER", "2"))
 SESSION_IDLE_MINUTES = int(os.getenv("SESSION_IDLE_MINUTES", "45"))
@@ -16,20 +19,16 @@ if os.getenv("ENV") == "production":
     if len(APP_SECRET) < 64 or APP_SECRET.startswith("dev-secret") or APP_SECRET.startswith("REPLACE_"):
         raise RuntimeError("APP_SECRET must be a unique random secret of at least 64 characters in production")
 
-try:
-    import redis
-except Exception:
-    redis = None
+_IS_PRODUCTION = os.getenv("ENV", "development").lower() == "production"
+_REDIS_CONFIGURED = bool(os.getenv("REDIS_URL", "").strip())
 
-_redis = None
-if redis and os.getenv("REDIS_URL"):
+def _rate_limit_redis():
+    # Reuse the retrying shared Redis client instead of connecting at import time.
     try:
-        _redis = redis.Redis.from_url(os.getenv("REDIS_URL"), decode_responses=True, socket_connect_timeout=2, socket_timeout=2)
-        _redis.ping()
-    except Exception as exc:
-        _redis = None
-        if os.getenv("ENV") == "production":
-            raise RuntimeError("REDIS_URL is configured but Redis is unavailable in production") from exc
+        from .cache import client as cache_client
+        return cache_client()
+    except Exception:
+        return None
 
 _fallback_attempts: dict[str, tuple[int, float]] = {}
 
@@ -66,9 +65,14 @@ def _rl_key(key: str) -> str:
     return "lms:login:" + sha256(key)[:32]
 
 def login_allowed(key: str, limit: int = 6, window: int = 600) -> bool:
-    if _redis:
-        value = _redis.get(_rl_key(key))
+    c = _rate_limit_redis()
+    if c:
+        value = c.get(_rl_key(key))
         return int(value or 0) < limit
+    # In multi-worker production, never silently downgrade a shared login limiter
+    # to process-local state when Redis is configured but temporarily unavailable.
+    if _IS_PRODUCTION and _REDIS_CONFIGURED:
+        return False
     now = time.time()
     count, reset = _fallback_attempts.get(key, (0, now + window))
     if now > reset:
@@ -77,12 +81,15 @@ def login_allowed(key: str, limit: int = 6, window: int = 600) -> bool:
     return count < limit
 
 def record_failed_login(key: str, window: int = 600):
-    if _redis:
+    c = _rate_limit_redis()
+    if c:
         k = _rl_key(key)
-        pipe = _redis.pipeline()
+        pipe = c.pipeline()
         pipe.incr(k)
         pipe.expire(k, window, nx=True)
         pipe.execute()
+        return
+    if _IS_PRODUCTION and _REDIS_CONFIGURED:
         return
     now = time.time()
     count, reset = _fallback_attempts.get(key, (0, now + window))
@@ -91,8 +98,9 @@ def record_failed_login(key: str, window: int = 600):
     _fallback_attempts[key] = (count + 1, reset)
 
 def clear_failed_logins(key: str):
-    if _redis:
-        _redis.delete(_rl_key(key))
+    c = _rate_limit_redis()
+    if c:
+        c.delete(_rl_key(key))
     _fallback_attempts.pop(key, None)
 
 def create_session_token() -> tuple[str, str]:

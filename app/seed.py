@@ -33,17 +33,14 @@ def run():
         if production and engine.dialect.name == "postgresql":
             db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": 1297044309})
         _normalize_legacy_grades(db)
-        admin_email = os.getenv("ADMIN_EMAIL", "almostashar9974@gmail.com").strip().lower()
-        admin_role = os.getenv("ADMIN_ROLE", "super_admin").strip().lower()
-        if admin_role not in {"super_admin", "admin"}:
-            admin_role = "super_admin"
+        admin_email = os.getenv("ADMIN_EMAIL", "admin@ragab-seddik.local").strip().lower()
         admin = db.query(User).filter(User.email == admin_email).first()
         if not admin:
             admin = User(
                 name=os.getenv("ADMIN_NAME", "مدير المنصة"),
                 email=admin_email,
                 password_hash=hash_password(_required("ADMIN_PASSWORD", "ChangeMe123!")),
-                role=admin_role,
+                role="admin",
                 is_active=True,
             )
             db.add(admin); db.flush()

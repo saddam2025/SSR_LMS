@@ -1,18 +1,11 @@
-# Mostashar V80 — Student Frontend on Cloudflare Pages
+# Mostashar frontend
 
-هذا المجلد هو واجهة الطالب المستقلة. في V80 أصبح النشر المقترح:
+## Default production topology (V96)
 
-- Production student frontend: `https://student.ragab-seddik.com`
-- Production backend/API: `https://api.ragab-seddik.com`
-- Legacy/public fallback: `https://ragab-seddik.com` و `https://www.ragab-seddik.com`
-- Staging student frontend: `https://staging-student.ragab-seddik.com`
-- Staging backend/API: `https://staging-api.ragab-seddik.com`
+The supported default is **single-domain**: `https://ragab-seddik.com`.
+`config.js` therefore uses `window.location.origin` and does not require an API subdomain.
 
-## Cloudflare Pages
-
-انشر مجلد `platform/frontend` كموقع Static. لا يوجد Build command إلزامي، والـOutput directory هو نفس المجلد عند Direct Upload، أو انسخه إلى مجلد build عند ربط Git.
-
-`config.js` مضبوط للإنتاج على `https://api.ragab-seddik.com`. في Staging يجب استبداله أثناء الـbuild أو في نسخة staging إلى `https://staging-api.ragab-seddik.com`.
+A separated student frontend is optional only when `SEPARATED_FRONTEND_ENABLED=true`; in that case generate environment-specific config with `deploy/build-pages.py` instead of using the default `config.js`.
 
 أضف Custom Domain `student.ragab-seddik.com` إلى مشروع Pages بعد نجاح Preview/Staging. ملفا `_headers` و`_redirects` موجودان داخل الـoutput ويُطبقان تلقائيًا في Pages.
 

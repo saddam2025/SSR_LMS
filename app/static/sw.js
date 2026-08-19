@@ -1,4 +1,4 @@
-const CACHE = 'ragab-seddik-static-v57';
+const CACHE = 'ragab-seddik-static-v96-wheel-typography1';
 const STATIC_ASSETS = [
   '/static/style.css',
   '/static/protected-content.js',

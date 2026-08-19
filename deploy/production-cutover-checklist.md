@@ -18,16 +18,16 @@
 Set secrets in Cloudflare, not Git/ZIP: APP_SECRET, CF_EDGE_SIGNING_SECRET, CF_ACCOUNT_ID, CF_STREAM_API_TOKEN, CF_STREAM_CUSTOMER_CODE, DATABASE_URL, REDIS_URL, ADMIN_EMAIL, ADMIN_PASSWORD, S3_ENDPOINT_URL, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, and Paymob/FCM/SMS secrets when enabled.
 
 ## 4. Production domains
-- Backend/API: `api.ragab-seddik.com`.
-- Student Pages: `student.ragab-seddik.com`.
+- Default production web/API: `ragab-seddik.com` (single domain).
+- Separate `api.` / `student.` domains are optional only when `SEPARATED_FRONTEND_ENABLED=true`.
 - Public/legacy fallback during migration: `ragab-seddik.com` and `www.ragab-seddik.com` remain attached to Backend until homepage/admin are fully migrated to a static/separate frontend.
 - Do not remove the legacy fallback in the same release as the first Pages deployment.
 
 ## 5. Cutover acceptance
 - `/health` returns 200 and `/ready` returns 200.
-- CORS allows exactly `https://student.ragab-seddik.com` with credentials.
+- Default single-domain mode does not require CORS. If separated frontend is enabled, allow only its exact HTTPS origin with credentials.
 - Anonymous `/api/v1/session` returns 401.
-- Student login redirects to `student.ragab-seddik.com/student/` and API calls carry the HttpOnly session.
+- Default single-domain login remains on `ragab-seddik.com`. If separated frontend is enabled, verify its explicit redirect/CORS/cookie contract.
 - Video URLs are not exposed raw; Cloudflare grants/proxy paths remain short-lived.
 - Paymob webhook signature verification works before enabling real payments.
 - Monitor 5xx, login failures, Redis errors, DB pool timeouts, Stream upload failures and webhook failures after cutover.

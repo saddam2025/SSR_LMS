@@ -33,6 +33,11 @@ def activate_paid_entitlement(db, tx, provider_id: str = ""):
     e = db.query(Enrollment).filter_by(user_id=tx.user_id, course_id=tx.course_id).first()
     if e:
         e.active = True
+        # Reset any stale expiry left over from a prior expired cycle. If we don't
+        # clear this, access.py's authorized_for_course() gate sees the old,
+        # already-past expires_at and locks the student out again right after they
+        # paid. Subscription.ends_at (below) is what governs the new period.
+        e.expires_at = None
     else:
         db.add(Enrollment(user_id=tx.user_id, course_id=tx.course_id, active=True))
     db.add(Subscription(user_id=tx.user_id, course_id=tx.course_id, amount=tx.amount, status="active", payment_ref=tx.provider_reference))

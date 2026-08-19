@@ -19,6 +19,7 @@ def base_env():
         "CF_EDGE_SIGNING_SECRET":"b"*40,
         "CF_ACCOUNT_ID":"c"*32,
         "CF_STREAM_API_TOKEN":"d"*40,
+        "CF_STREAM_CUSTOMER_CODE":"customer-code-test",
         "VIDEO_ALLOWED_HOSTS":"cloudflarestream.com,videodelivery.net",
         "ALLOW_DIRECT_VIDEO_PROXY":"false",
         "FRONTEND_PRIMARY_ORIGIN":"https://staging-student.ragab-seddik.com",

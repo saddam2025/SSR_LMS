@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build V89 immutable release manifest + SHA-256 checksums.
+"""Build immutable release manifest + SHA-256 checksums for the current VERSION.
 
 Never includes .env files, credentials, caches, VCS metadata, or generated evidence.
 """
@@ -18,7 +18,7 @@ def allowed(p: Path) -> bool:
         return False
     if p.name in EXCLUDED_NAMES or p.suffix.lower() in EXCLUDED_SUFFIXES:
         return False
-    if p.name.startswith(".env.") and p.name != ".env.example":
+    if p.name.startswith(".env.") and p.name not in {".env.example", ".env.railway.example"}:
         return False
     return p.is_file()
 
@@ -31,8 +31,8 @@ def sha256(p: Path) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--output", type=Path, default=ROOT/"RELEASE-MANIFEST-V89.json")
-    ap.add_argument("--checksums", type=Path, default=ROOT/"SHA256SUMS-V89.txt")
+    ap.add_argument("--output", type=Path, default=ROOT/f"RELEASE-MANIFEST-{(ROOT/'VERSION').read_text().strip()}.json")
+    ap.add_argument("--checksums", type=Path, default=ROOT/f"SHA256SUMS-{(ROOT/'VERSION').read_text().strip()}.txt")
     args = ap.parse_args()
     files = []
     for p in sorted(ROOT.rglob("*")):

@@ -8,6 +8,7 @@ from datetime import datetime
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from ..db import get_db
@@ -22,9 +23,14 @@ from ..security import check_csrf
 from ..request_context import require_role, template_context, audit
 from ..cloudflare_stream import extract_stream_uid
 from ..cloudflare_upload import stream_upload_ready, max_upload_bytes as stream_max_upload_bytes
+from ..storage import s3_ready
 from ..services.courses import validated_video_url
 
 router = APIRouter()
+
+def direct_media_upload_enabled() -> bool:
+    return os.getenv("DIRECT_R2_UPLOAD_ENABLED", "false").lower() in {"1", "true", "yes", "on"} and s3_ready()
+
 APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(APP_DIR, "templates"))
 
@@ -63,7 +69,8 @@ def admin_course(course_id: int, request: Request, db: Session = Depends(get_db)
     homeworks = db.query(Homework).filter_by(course_id=c.id).order_by(Homework.id.desc()).all()
     hw_ids = [h.id for h in homeworks] or [-1]
     submissions = db.query(HomeworkSubmission).filter(HomeworkSubmission.homework_id.in_(hw_ids)).order_by(HomeworkSubmission.id.desc()).all()
-    students = {x.id: x for x in db.query(User).filter(User.role == "student").all()}
+    submission_student_ids = {x.student_id for x in submissions}
+    students = {x.id: x for x in db.query(User).filter(User.id.in_(submission_student_ids or [-1]), User.role == "student").all()}
     lesson_map = {l.id: l for l in c.lessons}
     lesson_ids = list(lesson_map) or [-1]
     checkpoints = db.query(LessonCheckpoint).filter(LessonCheckpoint.lesson_id.in_(lesson_ids)).order_by(LessonCheckpoint.lesson_id, LessonCheckpoint.timestamp_seconds).all()
@@ -71,7 +78,7 @@ def admin_course(course_id: int, request: Request, db: Session = Depends(get_db)
     offline_policies = {x.lesson_id: x for x in db.query(OfflineLessonPolicy).filter(OfflineLessonPolicy.lesson_id.in_(lesson_ids)).all()}
     completion_policy = db.query(CourseCompletionPolicy).filter_by(course_id=c.id).first() or CourseCompletionPolicy(course_id=c.id)
     certificates_count = db.query(CourseCertificate).filter_by(course_id=c.id).filter(CourseCertificate.revoked_at.is_(None)).count()
-    return render_template("admin_course.html", template_context(request, db, course=c, quizzes=quizzes, assets=assets, homeworks=homeworks, submissions=submissions, students=students, checkpoints=checkpoints, flashcards=flashcards, offline_policies=offline_policies, lesson_map=lesson_map, completion_policy=completion_policy, certificates_count=certificates_count))
+    return render_template("admin_course.html", template_context(request, db, course=c, quizzes=quizzes, assets=assets, homeworks=homeworks, submissions=submissions, students=students, checkpoints=checkpoints, flashcards=flashcards, offline_policies=offline_policies, lesson_map=lesson_map, completion_policy=completion_policy, certificates_count=certificates_count, direct_media_upload_enabled=direct_media_upload_enabled()))
 
 @router.post("/admin/course/{course_id}/update")
 def update_course(course_id: int, request: Request, title: str = Form(...), description: str = Form(""), grade: str = Form(...), price: float = Form(0), csrf: str = Form(...), db: Session = Depends(get_db)):
@@ -84,7 +91,7 @@ def update_course(course_id: int, request: Request, title: str = Form(...), desc
     return RedirectResponse(f"/admin/course/{c.id}", 303)
 
 @router.get("/admin/lesson/{lesson_id}/edit", response_class=HTMLResponse)
-def edit_lesson_page(lesson_id: int, request: Request, db: Session = Depends(get_db)):
+def edit_lesson_page(lesson_id: int, request: Request, student_q: str = "", db: Session = Depends(get_db)):
     u = require_role(request, db, "super_admin", "admin", "content_manager")
     lesson = db.get(Lesson, lesson_id)
     if not lesson: raise HTTPException(404)
@@ -96,14 +103,19 @@ def edit_lesson_page(lesson_id: int, request: Request, db: Session = Depends(get
     drip_rule = db.query(LessonDripRule).filter_by(lesson_id=lesson.id).first()
     overrides = db.query(LessonAccessOverride).filter_by(lesson_id=lesson.id).order_by(LessonAccessOverride.updated_at.desc()).limit(20).all()
     override_users = {x.user_id: db.get(User, x.user_id) for x in overrides}
-    students = db.query(User).join(Enrollment, Enrollment.user_id == User.id).filter(Enrollment.course_id == course.id, Enrollment.active == True, User.role == "student").order_by(User.name).all()
+    student_q = student_q.strip()[:120]
+    student_query = db.query(User).join(Enrollment, Enrollment.user_id == User.id).filter(Enrollment.course_id == course.id, Enrollment.active == True, User.role == "student", User.is_active == True)
+    if student_q:
+        like = f"%{student_q}%"
+        student_query = student_query.filter(or_(User.name.ilike(like), User.email.ilike(like)))
+    students = student_query.order_by(User.name, User.id).limit(50).all()
     return render_template("admin_lesson_edit.html", template_context(
         request, db, lesson=lesson, course=course, assets=assets, siblings=siblings,
         video_profile=video_profile, drip_rule=drip_rule, overrides=overrides,
-        override_users=override_users, students=students,
+        override_users=override_users, students=students, student_q=student_q,
         stream_uid=extract_stream_uid(lesson.video_url) or "",
         stream_upload_configured=stream_upload_ready(),
-        stream_upload_max_bytes=stream_max_upload_bytes(),
+        stream_upload_max_bytes=stream_max_upload_bytes(), direct_media_upload_enabled=direct_media_upload_enabled(),
     ))
 
 @router.post("/admin/lesson/{lesson_id}/update")

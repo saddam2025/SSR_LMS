@@ -1,9 +1,0 @@
-{
-  "timestamp": 0,
-  "go": false,
-  "summary": "Replace with disposable staging database backup/restore drill result",
-  "backup_created": false,
-  "restore_completed": false,
-  "integrity_verified": false,
-  "notes": "Record counts/checksums only; never include database passwords."
-}

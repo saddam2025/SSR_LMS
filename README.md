@@ -97,8 +97,25 @@ PYTHONPATH=. python tests/smoke_test.py
 - Demo parent: `parent@ragab-seddik.local` / `Parent12345!`
 
 ## Current verified release
-V55 is the browser-auth and deployment final candidate. It includes role-aware navigation, Cloudflare/R2/Stream production hardening, Reels and Honor Roll homepage controls, the lesson-grounded Smart Tutor, Android/Windows build environments, and the complete isolated regression suite. See `DEPLOYMENT.md` and `../CLOUDFLARE-DEPLOYMENT-AR.md` before production deployment.
+V96 Critical Hardened is the current Railway release candidate. The normal production topology is single-domain, Railway preparation runs in Pre-Deploy, `/ready` is the deep deployment healthcheck, large admin lists are paginated/set-based, background communications use reliable Redis Streams, and protected-media watermark work is concurrency-bounded.
+
+### Production login bootstrap
+- Keep `RUN_SEED_ON_START=false`.
+- Set real `ADMIN_EMAIL` and a strong `ADMIN_PASSWORD` in Railway Variables before the first deploy.
+- On a fresh production database the startup creates **only** the initial Admin account; it never seeds demo students/content and never overwrites an existing Admin password on restart.
+- With `REQUIRE_STAFF_MFA=true`, the first Admin login goes directly to `/account/security?required=1` to enroll MFA.
+- Keep `SEPARATED_FRONTEND_ENABLED=false` unless a separate student frontend has actually been deployed and accepted.
+
+See `RAILWAY-DEPLOYMENT-V96-AR.md` and `RAILWAY-FINAL-CHECKLIST-V96.md` for the current deployment order and acceptance steps.
 
 ## Firebase Cloud Messaging
-See `../apps/FCM-V4-SETUP.md` for Android push notification setup. Production service-account credentials must remain in environment secrets only.
+Firebase push is configured through `FCM_ENABLED`, `FIREBASE_PROJECT_ID`, and `FIREBASE_SERVICE_ACCOUNT_JSON`. Keep service-account credentials in Railway/environment secrets only; they are intentionally not included in this source archive.
 
+
+## V96 Wheel & Typography Refresh — 2026-08-18
+
+- Native responsive English Skills wheel replaces the old image-hotspot wheel.
+- Arabic UI typography: Tajawal body + Cairo headings; English labels: Montserrat.
+- Cache/PWA release fingerprint: `V96-WHEEL-TYPOGRAPHY-REFRESH-20260818-01`.
+- Full regression suite: 95 tests passing before packaging.
+- See `FINAL-QA-WHEEL-TYPOGRAPHY-V96-2026-08-18-AR.md` for verification details.

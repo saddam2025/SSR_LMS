@@ -895,5 +895,17 @@ class HomepageHonor(Base):
     sort_order: Mapped[int] = mapped_column(Integer, default=0, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
+class HomepageReview(Base):
+    __tablename__ = "homepage_reviews"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    student_name: Mapped[str] = mapped_column(String(140))
+    grade: Mapped[str] = mapped_column(String(100), default="")
+    review_text: Mapped[str] = mapped_column(Text)
+    rating: Mapped[int] = mapped_column(Integer, default=5)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
 Index("ix_homepage_reels_active_sort", HomepageReel.active, HomepageReel.sort_order, HomepageReel.id)
 Index("ix_homepage_honors_active_sort", HomepageHonor.active, HomepageHonor.sort_order, HomepageHonor.id)
+Index("ix_homepage_reviews_active_sort", HomepageReview.active, HomepageReview.sort_order, HomepageReview.id)

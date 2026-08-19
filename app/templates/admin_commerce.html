@@ -13,8 +13,10 @@
 
 <div class="section-title"><div><span class="eyebrow">SUBSCRIPTIONS</span><h2>إدارة الاشتراكات</h2></div><span class="badge">{{metrics.expired_subscriptions}} منتهي</span></div>
 <div class="split">
-  <div class="card"><h3>منح اشتراك يدوي</h3><form method="post" action="/admin/subscriptions/grant"><input type="hidden" name="csrf" value="{{csrf}}">
-    <div class="field"><label>الطالب</label><select name="user_id" required>{% for s in students %}<option value="{{s.id}}">{{s.name}} — {{s.email}}</option>{% endfor %}</select></div>
+  <div class="card"><h3>منح اشتراك يدوي</h3>
+    <form method="get" action="/admin/commerce" class="inline-actions" style="margin-bottom:12px"><input name="student_q" value="{{student_q}}" placeholder="ابحث باسم الطالب أو البريد"><button class="btn secondary small">بحث</button>{% if student_q %}<a class="btn ghost small" href="/admin/commerce">مسح</a>{% endif %}</form>
+    <form method="post" action="/admin/subscriptions/grant"><input type="hidden" name="csrf" value="{{csrf}}">
+    <div class="field"><label>الطالب — أقصى 50 نتيجة</label><select name="user_id" required>{% for s in students %}<option value="{{s.id}}">{{s.name}} — {{s.email}}</option>{% endfor %}</select></div>
     <div class="field"><label>الكورس</label><select name="course_id" required>{% for c in courses %}<option value="{{c.id}}">{{c.title}}</option>{% endfor %}</select></div>
     <div class="field"><label>مدة الاشتراك بالأيام</label><input type="number" name="duration_days" min="0" max="3650" value="30"><small class="muted">0 = بدون تاريخ انتهاء</small></div>
     <div class="field"><label>المبلغ المسجل</label><input type="number" step="0.01" min="0" name="amount" value="0"></div><button class="btn">تفعيل الاشتراك</button>

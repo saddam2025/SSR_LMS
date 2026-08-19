@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import func
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import User, Course, Lesson, Enrollment, Quiz, QuizAttempt, Device, ActiveSession, LessonProgress, Subscription, PaymentTransaction, Homework, HomeworkSubmission, MediaAsset, SupportTicket, LiveClass, CommunicationCampaign, AuditLog, ContentSchedule, CourseCertificate
@@ -10,7 +10,7 @@ from ..services.template_rendering import render_template
 from ..services.dashboard_experience import points_total as dashboard_points_total, level_for as dashboard_level_for, student_plan as dashboard_student_plan
 from ..services.student_activity import student_weekly_attendance
 from ..services.community import student_live_classes
-from ..services.reports import student_performance_rows
+from ..services.reports import student_performance_rows, performance_candidate_student_ids
 from ..services.academic_content import schedule_status
 router=APIRouter()
 
@@ -74,39 +74,82 @@ def teacher_dashboard(request: Request, db: Session = Depends(get_db)):
 @router.get("/teacher/assessment", response_class=HTMLResponse)
 def teacher_assessment_center(request: Request, db: Session = Depends(get_db)):
     u = require_role(request, db, "super_admin", "admin", "content_manager")
-    homeworks = db.query(Homework).order_by(Homework.due_at.asc().nullslast(), Homework.id.desc()).all()
-    homework_ids = [h.id for h in homeworks]
-    submissions = db.query(HomeworkSubmission).filter(HomeworkSubmission.homework_id.in_(homework_ids or [-1])).order_by(HomeworkSubmission.submitted_at.desc()).all()
-    courses = {c.id: c for c in db.query(Course).all()}
-    students = {x.id: x for x in db.query(User).filter(User.role == "student").all()}
-    active_enrollments = db.query(Enrollment).filter(Enrollment.active == True).all()
-    enrolled_by_course = {}
-    for e in active_enrollments:
-        enrolled_by_course.setdefault(e.course_id, set()).add(e.user_id)
-    submitted_by_homework = {}
-    for sub in submissions:
-        submitted_by_homework.setdefault(sub.homework_id, set()).add(sub.student_id)
     now = datetime.utcnow()
-    pending = [x for x in submissions if x.status == "submitted" and x.graded_at is None]
-    revision = [x for x in submissions if x.status == "revision_requested"]
-    graded = [x for x in submissions if x.status == "graded" or x.graded_at is not None]
-    late = []
-    for sub in submissions:
-        h = next((z for z in homeworks if z.id == sub.homework_id), None)
-        if h and h.due_at and sub.submitted_at and sub.submitted_at > h.due_at:
-            late.append(sub)
-    missing_rows = []
-    for h in homeworks:
-        if not h.published or not h.due_at or h.due_at >= now:
-            continue
-        expected = enrolled_by_course.get(h.course_id, set())
-        submitted = submitted_by_homework.get(h.id, set())
-        for student_id in sorted(expected - submitted):
-            missing_rows.append({"homework": h, "student": students.get(student_id), "course": courses.get(h.course_id)})
-    scores = [x.score for x in graded if x.score is not None]
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
-    homework_map = {h.id: h for h in homeworks}
-    return render_template("teacher_assessment.html", ctx(request, db, user=u, homeworks=homeworks, homework_map=homework_map, submissions=submissions, students=students, courses=courses, pending=pending, revision=revision, graded=graded, late=late, missing_rows=missing_rows[:100], avg_score=avg_score, now=now))
+
+    pending_q = db.query(HomeworkSubmission).filter(
+        HomeworkSubmission.status.in_(["submitted", "resubmitted"]),
+        HomeworkSubmission.graded_at.is_(None),
+    )
+    pending_count = pending_q.count()
+    pending = pending_q.order_by(HomeworkSubmission.submitted_at.asc()).limit(100).all()
+    revision_count = db.query(func.count(HomeworkSubmission.id)).filter(HomeworkSubmission.status == "revision_requested").scalar() or 0
+    late_count = (
+        db.query(func.count(HomeworkSubmission.id))
+        .join(Homework, Homework.id == HomeworkSubmission.homework_id)
+        .filter(Homework.due_at.isnot(None), HomeworkSubmission.submitted_at > Homework.due_at)
+        .scalar() or 0
+    )
+    avg_score = float(
+        db.query(func.coalesce(func.avg(HomeworkSubmission.score), 0))
+        .filter(HomeworkSubmission.score.isnot(None), HomeworkSubmission.graded_at.isnot(None))
+        .scalar() or 0
+    )
+    avg_score = round(avg_score, 1)
+
+    # Missing submissions are derived in SQL instead of materializing every active
+    # enrollment and every submission in Python. Only the first 100 rows are rendered.
+    missing_q = (
+        db.query(User, Homework, Course)
+        .join(Enrollment, Enrollment.user_id == User.id)
+        .join(Homework, Homework.course_id == Enrollment.course_id)
+        .join(Course, Course.id == Homework.course_id)
+        .outerjoin(
+            HomeworkSubmission,
+            and_(
+                HomeworkSubmission.homework_id == Homework.id,
+                HomeworkSubmission.student_id == User.id,
+            ),
+        )
+        .filter(
+            User.role == "student",
+            User.is_active == True,
+            Enrollment.active == True,
+            Homework.published == True,
+            Homework.due_at.isnot(None),
+            Homework.due_at < now,
+            HomeworkSubmission.id.is_(None),
+        )
+    )
+    missing_count = missing_q.count()
+    missing_rows = [
+        {"student": student, "homework": homework, "course": course}
+        for student, homework, course in missing_q.order_by(Homework.due_at.desc(), User.name).limit(100).all()
+    ]
+
+    graded = (
+        db.query(HomeworkSubmission)
+        .filter(HomeworkSubmission.score.isnot(None))
+        .order_by(HomeworkSubmission.graded_at.desc().nullslast(), HomeworkSubmission.id.desc())
+        .limit(12)
+        .all()
+    )
+    visible_submissions = pending + graded
+    homework_ids = {x.homework_id for x in visible_submissions}
+    student_ids = {x.student_id for x in visible_submissions}
+    homework_map = {h.id: h for h in db.query(Homework).filter(Homework.id.in_(homework_ids or [-1])).all()}
+    course_ids = {h.course_id for h in homework_map.values()}
+    courses = {c.id: c for c in db.query(Course).filter(Course.id.in_(course_ids or [-1])).all()}
+    students = {x.id: x for x in db.query(User).filter(User.id.in_(student_ids or [-1])).all()}
+
+    # Template keeps its historical names, but KPI values now represent full-table
+    # SQL counts while rendered work queues stay bounded.
+    return render_template("teacher_assessment.html", ctx(
+        request, db, user=u, homework_map=homework_map, students=students, courses=courses,
+        pending=pending, revision=[], graded=graded, late=[],
+        missing_rows=missing_rows, avg_score=avg_score,
+        pending_count=int(pending_count), revision_count=int(revision_count),
+        late_count=int(late_count), missing_count=int(missing_count), now=now,
+    ))
 
 @router.get("/admin", response_class=HTMLResponse)
 def admin(request: Request, db: Session = Depends(get_db)):
@@ -136,7 +179,8 @@ def admin(request: Request, db: Session = Depends(get_db)):
     }
 
     # V31 daily command center: reuse the same performance engine as the detailed reports.
-    performance_rows = student_performance_rows(db)
+    candidate_ids = performance_candidate_student_ids(db, limit=int(__import__("os").getenv("ADMIN_DASHBOARD_RISK_CANDIDATES", "400")))
+    performance_rows = student_performance_rows(db, student_ids=candidate_ids)
     at_risk_students = [r for r in performance_rows if r["risk"] == "high"][:6]
     followup_students = [r for r in performance_rows if r["risk"] == "medium"][:6]
 

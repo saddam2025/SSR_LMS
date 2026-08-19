@@ -87,6 +87,7 @@ os.environ.update({
     "S3_SECRET_ACCESS_KEY": "test-secret-key",
     "CF_ACCOUNT_ID": "a" * 32,
     "CF_STREAM_API_TOKEN": "token-" + ("b" * 40),
+    "CF_STREAM_CUSTOMER_CODE": "test-customer-code",
     "ALLOW_DIRECT_VIDEO_PROXY": "false",
 })
 status = production_status()

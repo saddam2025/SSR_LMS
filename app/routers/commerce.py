@@ -157,7 +157,7 @@ def payment_complete(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/admin/commerce", response_class=HTMLResponse)
-def admin_commerce(request: Request, db: Session = Depends(get_db)):
+def admin_commerce(request: Request, student_q: str = "", db: Session = Depends(get_db)):
     require_role(request, db, "super_admin", "admin", "accounting")
     now = datetime.utcnow(); month_start = now - timedelta(days=30); soon = now + timedelta(days=7)
     coupons = db.query(Coupon).order_by(Coupon.id.desc()).all()
@@ -165,7 +165,12 @@ def admin_commerce(request: Request, db: Session = Depends(get_db)):
     subscriptions = db.query(Subscription).order_by(Subscription.starts_at.desc()).limit(150).all()
     codes = db.query(ActivationCode).order_by(ActivationCode.id.desc()).limit(100).all()
     courses = db.query(Course).order_by(Course.title).all()
-    students = db.query(User).filter(User.role == "student").order_by(User.name).all()
+    student_q = " ".join((student_q or "").strip().split())[:120]
+    student_query = db.query(User).filter(User.role == "student", User.is_active == True)
+    if student_q:
+        like = f"%{student_q}%"
+        student_query = student_query.filter(or_(User.name.ilike(like), User.email.ilike(like)))
+    students = student_query.order_by(User.id.desc()).limit(50).all()
     user_ids = {x.user_id for x in payments} | {x.user_id for x in subscriptions}
     users = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
     course_ids = {x.course_id for x in payments} | {x.course_id for x in subscriptions} | {x.course_id for x in codes}
@@ -179,7 +184,7 @@ def admin_commerce(request: Request, db: Session = Depends(get_db)):
     expiring_subscriptions = db.query(Subscription).filter(Subscription.status == "active", Subscription.ends_at != None, Subscription.ends_at > now, Subscription.ends_at <= soon).count()
     expired_subscriptions = db.query(Subscription).filter(or_(Subscription.status == "expired", Subscription.ends_at <= now)).count()
     metrics = {"revenue_total": revenue_total, "revenue_30": revenue_30, "paid_count": paid_count, "pending_count": pending_count, "failed_count": failed_count, "active_subscriptions": active_subscriptions, "expiring_subscriptions": expiring_subscriptions, "expired_subscriptions": expired_subscriptions}
-    return _render("admin_commerce.html", ctx(request, db, coupons=coupons, payments=payments, subscriptions=subscriptions, paymob_ready=paymob_configured(), activation_codes=codes, courses=courses, students=students, users=users, course_map=course_map, metrics=metrics, now=now, soon=soon))
+    return _render("admin_commerce.html", ctx(request, db, coupons=coupons, payments=payments, subscriptions=subscriptions, paymob_ready=paymob_configured(), activation_codes=codes, courses=courses, students=students, student_q=student_q, users=users, course_map=course_map, metrics=metrics, now=now, soon=soon))
 
 
 @router.post("/admin/coupons")

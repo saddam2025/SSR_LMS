@@ -14,15 +14,28 @@ def student_last_activity(db: Session, user_id: int):
     return max((value for value in values if value is not None), default=None)
 
 
-def student_last_activity_map(db: Session):
+def student_last_activity_map(db: Session, user_ids: list[int] | set[int] | None = None):
     result = {}
+    scoped = [int(x) for x in (user_ids or []) if x]
+    if user_ids is not None and not scoped:
+        return result
+
     def keep(uid, dt):
         if uid and dt and (uid not in result or dt > result[uid]):
             result[uid] = dt
-    for row in db.query(ActiveSession.user_id, func.max(ActiveSession.last_seen_at)).group_by(ActiveSession.user_id).all(): keep(row[0], row[1])
-    for row in db.query(LessonProgress.user_id, func.max(LessonProgress.updated_at)).group_by(LessonProgress.user_id).all(): keep(row[0], row[1])
-    for row in db.query(QuizAttempt.user_id, func.max(QuizAttempt.created_at)).group_by(QuizAttempt.user_id).all(): keep(row[0], row[1])
-    for row in db.query(HomeworkSubmission.student_id, func.max(HomeworkSubmission.submitted_at)).group_by(HomeworkSubmission.student_id).all(): keep(row[0], row[1])
+
+    specs = (
+        (ActiveSession, ActiveSession.user_id, ActiveSession.last_seen_at),
+        (LessonProgress, LessonProgress.user_id, LessonProgress.updated_at),
+        (QuizAttempt, QuizAttempt.user_id, QuizAttempt.created_at),
+        (HomeworkSubmission, HomeworkSubmission.student_id, HomeworkSubmission.submitted_at),
+    )
+    for _model, uid_col, dt_col in specs:
+        q = db.query(uid_col, func.max(dt_col))
+        if user_ids is not None:
+            q = q.filter(uid_col.in_(scoped))
+        for row in q.group_by(uid_col).all():
+            keep(row[0], row[1])
     return result
 
 

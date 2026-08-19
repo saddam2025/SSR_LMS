@@ -1,8 +1,8 @@
 {
-  "version": "79",
-  "android_version": "4.1.5",
-  "windows_version": "4.1.5",
+  "version": "4.1.6",
+  "android_version": "4.1.6",
+  "windows_version": "4.1.6",
   "download_url": "https://ragab-seddik.com/downloads",
   "minimum_supported_version": "4.0.0",
-  "release": "V79-PRODUCTION-HARDENING"
+  "release": "V96-WHEEL-TYPOGRAPHY-REFRESH-20260818-01"
 }

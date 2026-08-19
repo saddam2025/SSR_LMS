@@ -1,0 +1,12 @@
+[
+  {
+    "AllowedOrigins": [
+      "https://ragab-seddik.com",
+      "https://www.ragab-seddik.com"
+    ],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["Content-Type"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]

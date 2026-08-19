@@ -8,6 +8,7 @@ os.environ['SESSION_SECRET']='v62-session-secret-'+'y'*80
 os.environ['REQUIRE_STAFF_MFA']='false'
 os.environ['FRONTEND_ORIGINS']='https://www.ragab-seddik.com'
 os.environ['FRONTEND_PRIMARY_ORIGIN']='https://www.ragab-seddik.com'
+os.environ['SEPARATED_FRONTEND_ENABLED']='true'
 from fastapi.testclient import TestClient
 from app.main import app
 from app.db import Base, engine, SessionLocal

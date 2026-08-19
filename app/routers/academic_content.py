@@ -1,10 +1,10 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
-from ..db import get_db
+from ..db import engine, get_db
 from ..models import (
     User, Course, Lesson, Quiz, Question, Homework, HomeworkSubmission, Enrollment, MediaAsset,
     ContentUnit, LessonUnitAssignment, QuizUnitAssignment, HomeworkUnitAssignment, CourseAcademicPeriod, ContentSchedule,
@@ -17,6 +17,10 @@ from ..services.academic_content import schedule_status, target_schedule, revisi
 
 router = APIRouter()
 GRADE_ORDER = ["الصف الأول الثانوي", "الصف الثاني الثانوي عام", "الصف الثاني بكالوريا", "الصف الثالث الثانوي"]
+
+def _pg_xact_lock(db, namespace: int, entity_id: int):
+    if engine.dialect.name == "postgresql":
+        db.execute(text("SELECT pg_advisory_xact_lock(:ns, :entity)"), {"ns": int(namespace), "entity": int(entity_id) & 0x7FFFFFFF})
 
 def _content_center_payload(db: Session):
     courses = db.query(Course).order_by(Course.grade, Course.id).all()
@@ -344,7 +348,8 @@ def student_revision_task_toggle(task_id:int,request:Request,csrf:str=Form(...),
     if not task or not plan or not plan.published: raise HTTPException(404)
     profile=db.query(StudentProfile).filter_by(user_id=u.id).first(); grade=(profile.grade if profile else "") or ""
     if plan.grade not in {"كل الصفوف",grade}: raise HTTPException(403)
-    row=db.query(RevisionTaskProgress).filter_by(user_id=u.id,task_id=task.id).first()
+    _pg_xact_lock(db, 5521, (int(u.id) * 1000003 + int(task.id)))
+    row=db.query(RevisionTaskProgress).filter_by(user_id=u.id,task_id=task.id).with_for_update().first()
     if not row: row=RevisionTaskProgress(user_id=u.id,task_id=task.id,completed=True,completed_at=datetime.utcnow());db.add(row)
     else:
         row.completed=not row.completed; row.completed_at=datetime.utcnow() if row.completed else None

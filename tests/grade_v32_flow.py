@@ -1,4 +1,6 @@
 import os
+import json
+from pathlib import Path
 os.environ.setdefault('ENV','development')
 os.environ.setdefault('DATABASE_URL','sqlite:///./grade_v32_test.db')
 from fastapi.testclient import TestClient
@@ -16,5 +18,6 @@ with TestClient(app) as c:
     assert 'الصف الثاني الثانوي عام' in r.text
     assert 'الصف الثاني بكالوريا' in r.text
     v=c.get('/app-version.json')
-    assert v.status_code == 200 and v.json()['version']=='4.1.5'
+    expected = json.loads(Path('app/static/app-version.json').read_text(encoding='utf-8'))['version']
+    assert v.status_code == 200 and v.json()['version'] == expected
 print('GRADE V32 + APP VERSION FLOW OK')

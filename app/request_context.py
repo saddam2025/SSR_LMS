@@ -4,10 +4,12 @@ V66 extracts these cross-cutting concerns from main.py so routers/services can
 reuse them without importing the application module.
 """
 import json, os, secrets
+import ipaddress
 from datetime import datetime
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
 from .models import ActiveSession, AuditLog, Device, Notification, User
+from .cache import get_json as cache_get_json, set_json as cache_set_json
 from .permissions import ROLE_LABELS, STAFF_ROLES
 from .security import (
     REQUIRE_STAFF_MFA, device_fingerprint, ensure_csrf, session_idle_deadline,
@@ -16,18 +18,39 @@ from .security import (
 
 IS_PRODUCTION = os.getenv("ENV") == "production"
 DEVICE_COOKIE_NAME = "__Host-lms_device" if IS_PRODUCTION else "lms_device"
-SESSION_TOUCH_SECONDS = max(15, min(int(os.getenv("SESSION_TOUCH_SECONDS", "60")), 300))
+SESSION_TOUCH_SECONDS = max(15, min(int(os.getenv("SESSION_TOUCH_SECONDS", "180")), 300))
+
+
+def _validated_ip(value: str) -> str:
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    # Strip RFC 7239-ish brackets for IPv6 only; proxy headers used here should
+    # otherwise contain bare addresses. Never persist attacker-controlled text as IP.
+    if raw.startswith("[") and raw.endswith("]"):
+        raw = raw[1:-1]
+    try:
+        return str(ipaddress.ip_address(raw))
+    except ValueError:
+        return ""
 
 
 def client_ip(request: Request) -> str:
     if os.getenv("TRUST_PROXY_HEADERS", "false").lower() == "true":
-        real = (request.headers.get("x-real-ip") or "").strip()
+        # In the supported production topology Cloudflare sits in front of Railway.
+        # Cloudflare preserves the end-user address in CF-Connecting-IP, while
+        # Railway's X-Real-IP can otherwise represent the CDN/proxy hop.
+        if os.getenv("CLOUDFLARE_DEPLOYMENT", "false").lower() in {"1", "true", "yes", "on"}:
+            cf_ip = _validated_ip(request.headers.get("cf-connecting-ip") or "")
+            if cf_ip:
+                return cf_ip
+        real = _validated_ip(request.headers.get("x-real-ip") or "")
         if real:
-            return real[:80]
-        forwarded = (request.headers.get("x-forwarded-for") or "").split(",", 1)[0].strip()
+            return real
+        forwarded = _validated_ip((request.headers.get("x-forwarded-for") or "").split(",", 1)[0])
         if forwarded:
-            return forwarded[:80]
-    return request.client.host if request.client else ""
+            return forwarded
+    return (request.client.host if request.client else "")[:80]
 
 
 def session_record(request: Request, db: Session):
@@ -96,9 +119,19 @@ def require_role(request: Request, db: Session, *roles):
     return u
 
 
+def _unread_notification_count(db: Session, user_id: int) -> int:
+    key = f"notifications:unread:{user_id}"
+    cached = cache_get_json(key)
+    if isinstance(cached, int) and cached >= 0:
+        return cached
+    value = db.query(Notification).filter(Notification.user_id == user_id, Notification.read_at.is_(None)).count()
+    cache_set_json(key, int(value), ttl=max(5, min(int(os.getenv("UNREAD_COUNT_CACHE_SECONDS", "15")), 60)))
+    return int(value)
+
+
 def template_context(request: Request, db: Session, **extra):
     u = current_user(request, db)
-    unread = db.query(Notification).filter(Notification.user_id == u.id, Notification.read_at.is_(None)).count() if u else 0
+    unread = _unread_notification_count(db, u.id) if u else 0
     return {
         "request": request, "user": u, "csrf": ensure_csrf(request.session),
         "unread_notifications": unread,

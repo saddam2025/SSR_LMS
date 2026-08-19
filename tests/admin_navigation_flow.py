@@ -38,7 +38,7 @@ check(parent,['/parent','/search','/notifications','/account/security'])
 home=TestClient(app).get('/')
 assert home.status_code==200
 assert 'wa.me/201060309494' in home.text
-assert '/static/branding/ragab-seddik-hero-2026.webp' in home.text
-asset=TestClient(app).get('/static/branding/ragab-seddik-hero-2026.webp')
+assert '/static/branding/ragab-seddik-portrait-v94.webp' in home.text
+asset=TestClient(app).get('/static/branding/ragab-seddik-portrait-v94.webp')
 assert asset.status_code==200 and asset.headers.get('content-type','').startswith('image/')
 print('SINGLE-TEACHER NAVIGATION + DASHBOARDS + WHATSAPP + OPTIMIZED HERO OK')

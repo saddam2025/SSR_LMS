@@ -30,6 +30,7 @@ from ..services.learning_runtime import (
     validated_video_url as _service_validated_video_url,
 )
 from ..services.lesson_rendering import render_lesson_page as _render_lesson_page
+from ..services.quiz_grading import grade_answers as _grade_answers, total_points as _quiz_total_points
 from ..services.study_intelligence import smart_study_answer as _smart_study_answer
 from ..services.template_rendering import render_template
 
@@ -122,7 +123,7 @@ def answer_checkpoint(lesson_id: int, checkpoint_id: int, request: Request, answ
     if not check_csrf(request.session, csrf): raise HTTPException(403)
     lesson = db.get(Lesson, lesson_id); cp = db.get(LessonCheckpoint, checkpoint_id)
     if not lesson or not _content_schedule_allows(db, "lesson", lesson.id) or not cp or cp.lesson_id != lesson.id or not cp.published or not authorized_for_course(db, u, lesson.course_id) or (u.role == "student" and not _lesson_unlocked(db, u, lesson)): raise HTTPException(403)
-    selected = (answer or "").upper()[:1]
+    selected = (answer or "").strip().upper()
     if selected not in {"A", "B", "C", "D"}: raise HTTPException(400, "اختيار غير صالح")
     _pg_xact_lock(db, 5508, (int(u.id) * 1000003 + int(cp.id)))
     rec = db.query(CheckpointAttempt).filter_by(checkpoint_id=cp.id, student_id=u.id).first()
@@ -312,12 +313,12 @@ def quiz_page(quiz_id: int, request: Request, db: Session = Depends(get_db)):
             if used >= qz.max_attempts:
                 db.commit()
                 raise HTTPException(403, "تم استنفاد عدد المحاولات")
-            qs_count = db.query(Question).filter_by(quiz_id=quiz_id).count()
-            attempt = QuizAttempt(quiz_id=quiz_id, user_id=u.id, total=qs_count, status="in_progress", started_at=now)
+            qs_for_total = db.query(Question).filter_by(quiz_id=quiz_id).all()
+            attempt = QuizAttempt(quiz_id=quiz_id, user_id=u.id, total=_quiz_total_points(db, qs_for_total), status="in_progress", started_at=now)
             db.add(attempt); db.commit(); request.session[session_key] = attempt.id
             audit(db, request, u, "quiz_started", {"quiz_id": quiz_id, "attempt_id": attempt.id})
     qs = db.query(Question).filter_by(quiz_id=quiz_id).all()
-    if qz.shuffle_questions: random.shuffle(qs)
+    if qz.shuffle_questions: random.Random(attempt.id).shuffle(qs)
     else:
         metas={m.question_id:m for m in db.query(QuizQuestionSetting).filter(QuizQuestionSetting.question_id.in_([q.id for q in qs] or [-1])).all()}
         qs.sort(key=lambda q:(metas.get(q.id).position if metas.get(q.id) else q.id,q.id))
@@ -334,6 +335,7 @@ async def submit_quiz(quiz_id: int, request: Request, db: Session = Depends(get_
     if not check_csrf(request.session, form.get("csrf")): raise HTTPException(403)
     session_key = f"quiz_attempt_{quiz_id}"
     attempt_id = request.session.get(session_key)
+    _pg_xact_lock(db, 5507, (int(u.id) * 1000003 + int(quiz_id)))
     attempt = db.query(QuizAttempt).filter(QuizAttempt.id == int(attempt_id)).with_for_update().first() if attempt_id else None
     if not attempt or attempt.user_id != u.id or attempt.quiz_id != quiz_id or attempt.status != "in_progress": raise HTTPException(409, "لا توجد محاولة اختبار نشطة")
     now = datetime.utcnow()
@@ -341,16 +343,13 @@ async def submit_quiz(quiz_id: int, request: Request, db: Session = Depends(get_
         attempt.status = "expired"; attempt.submitted_at = now; db.commit(); request.session.pop(session_key, None)
         raise HTTPException(408, "انتهى وقت الاختبار")
     qs = db.query(Question).filter_by(quiz_id=quiz_id).all()
-    details = []
-    correct = 0
-    for q in qs:
-        selected = str(form.get(f"q_{q.id}", "")).upper()[:1]
-        is_correct = selected == str(q.correct).upper()
-        if is_correct: correct += 1
-        options = {"A": q.option_a, "B": q.option_b, "C": q.option_c, "D": q.option_d}
-        details.append({"question": q.text, "selected": selected, "selected_text": options.get(selected, "لم تتم الإجابة"), "correct": str(q.correct).upper(), "correct_text": options.get(str(q.correct).upper(), ""), "is_correct": is_correct})
-    attempt.score = correct; attempt.total = len(qs); attempt.status = "submitted"; attempt.submitted_at = now
-    pct = (correct / len(qs) * 100) if qs else 0
+    answers = {str(q.id): form.get(f"q_{q.id}", "") for q in qs}
+    graded = _grade_answers(db, qs, answers)
+    details = graded["details"]
+    score = graded["score"]
+    total = graded["total"]
+    pct = graded["percentage"]
+    attempt.score = score; attempt.total = total; attempt.status = "submitted"; attempt.submitted_at = now
     award_points(db, u.id, 15 if pct < 80 else 30, "إنهاء اختبار", "quiz_attempt", attempt.id)
     if pct >= 80: db.add(Notification(user_id=u.id, title="إنجاز جديد", body=f"حصلت على {pct:.0f}% في {qz.title} و+30 نقطة", kind="success"))
     mock_profile=db.query(MockExamProfile).filter_by(quiz_id=qz.id).first()
@@ -372,8 +371,8 @@ async def submit_quiz(quiz_id: int, request: Request, db: Session = Depends(get_
         mock_analysis={"by_unit":rows(by_unit),"by_difficulty":rows(by_diff),"overall":round(pct)}
         db.add(MockExamAttemptAnalysis(attempt_id=attempt.id,analysis_json=json.dumps(mock_analysis,ensure_ascii=False)))
     db.commit(); request.session.pop(session_key, None)
-    audit(db, request, u, "quiz_attempt", {"quiz_id": quiz_id, "attempt_id": attempt.id, "score": correct, "total": len(qs)})
-    return render_template("quiz_result.html", ctx(request, db, score=correct, total=len(qs), details=details, quiz=qz, mock_analysis=mock_analysis, mock_profile=mock_profile))
+    audit(db, request, u, "quiz_attempt", {"quiz_id": quiz_id, "attempt_id": attempt.id, "score": score, "total": total, "percentage": round(pct, 1)})
+    return render_template("quiz_result.html", ctx(request, db, score=score, total=total, details=details, quiz=qz, mock_analysis=mock_analysis, mock_profile=mock_profile))
 
 @router.post("/lesson/{lesson_id}/discussion")
 def discussion_add(lesson_id:int,request:Request,body:str=Form(...),parent_id:int|None=Form(None),csrf:str=Form(...),db:Session=Depends(get_db)):

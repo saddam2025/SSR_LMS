@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from .. import push
 from ..db import get_db
+from ..cache import delete as cache_delete
 from ..models import Notification, PushDevice
 from ..request_context import require_user, template_context as ctx
 from ..security import check_csrf, ensure_csrf
@@ -70,6 +71,7 @@ def notifications_read_all(request: Request, csrf: str=Form(...), db: Session=De
     u=require_user(request, db)
     if not check_csrf(request.session, csrf): raise HTTPException(403)
     db.query(Notification).filter(Notification.user_id==u.id, Notification.read_at.is_(None)).update({Notification.read_at: datetime.utcnow()})
+    cache_delete(f"notifications:unread:{u.id}")
     db.commit(); return RedirectResponse("/notifications",303)
 
 

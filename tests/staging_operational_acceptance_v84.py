@@ -3,7 +3,7 @@ import importlib.util, json, tempfile
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-assert (ROOT/'VERSION').read_text().strip()=='V84'
+assert (ROOT/'VERSION').read_text().strip().startswith('V')
 p=ROOT/'deploy'/'operational-acceptance.py'
 spec=importlib.util.spec_from_file_location('v84_acceptance',p); m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 

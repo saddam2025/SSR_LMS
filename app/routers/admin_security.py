@@ -15,7 +15,8 @@ def admin_security(request: Request, db: Session = Depends(get_db)):
     require_role(request, db, "admin")
     devices = db.query(Device).order_by(Device.last_seen_at.desc()).limit(100).all()
     sessions = db.query(ActiveSession).filter(ActiveSession.revoked_at.is_(None)).order_by(ActiveSession.last_seen_at.desc()).limit(100).all()
-    users = {u.id: u for u in db.query(User).all()}
+    visible_user_ids = {x.user_id for x in devices} | {x.user_id for x in sessions}
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(visible_user_ids or [-1])).all()}
     return render_template("admin_security.html", ctx(request, db, devices=devices, sessions=sessions, users=users))
 
 @router.post("/admin/security/device/{device_id}/toggle")

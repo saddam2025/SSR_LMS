@@ -47,9 +47,9 @@ body.home-v95{background:#f4f8ff;color:var(--v95-ink)}
   --v96-gold:#ffc21b;
   --v96-gold2:#ffad0b;
 }
-body.home-v95{font-family:"Cairo","Segoe UI",Tahoma,Arial,sans-serif;overflow-x:hidden}
+body.home-v95{font-family:"Tajawal","Cairo","Segoe UI",Tahoma,Arial,sans-serif;overflow-x:hidden}
 body.home-v95 .ww-header,
-body.home-v95 .ww-header *{font-family:"Cairo","Segoe UI",Tahoma,Arial,sans-serif}
+body.home-v95 .ww-header *{font-family:"Tajawal","Cairo","Segoe UI",Tahoma,Arial,sans-serif}
 
 /* Desktop reference: copy left + portrait right in THE SAME grid row. */
 body.home-v95 .v95-hero{
@@ -190,4 +190,118 @@ body.home-v95 .whatsapp-float{left:18px;right:auto;bottom:18px;z-index:62}
   body.home-v95 .home-ai-fab{max-width:145px;padding:9px 11px}
   body.home-v95 .home-ai-fab b{font-size:10px}
   body.home-v95 .whatsapp-float{padding:7px}
+}
+
+/* V96 marketing sections — native Mostashar implementation */
+.mostashar-benefits,.mostashar-difference{width:min(1400px,92%);margin:74px auto 0;direction:rtl}
+.mostashar-benefits{padding:54px 46px 50px;border:1px solid #dfe9f4;border-radius:30px;background:linear-gradient(180deg,#f5f9ff 0%,#eef5fc 100%);box-shadow:0 24px 70px rgba(5,37,78,.06)}
+.mostashar-marketing-head{text-align:center;max-width:850px;margin:0 auto 40px}
+.mostashar-marketing-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid #b9d4ef;border-radius:999px;background:#edf6ff;color:#0f69dc;font-size:12px;font-weight:950;letter-spacing:.1px}
+.mostashar-marketing-kicker i{width:7px;height:7px;border-radius:50%;background:#12a7cf;box-shadow:0 0 0 5px rgba(18,167,207,.11)}
+.mostashar-marketing-head h2{margin:13px 0 8px;color:#071a35;font-size:clamp(34px,4vw,58px);line-height:1.12;font-weight:950;letter-spacing:-1.2px}
+.mostashar-marketing-head h2 em{font-style:normal;background:linear-gradient(90deg,#0f69dc,#13a3c7,#d4a43e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.mostashar-marketing-head p{max-width:760px;margin:0 auto;color:#60738d;font-size:16px;line-height:1.9;font-weight:650}
+.mostashar-benefit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.mostashar-benefit-grid article{min-height:225px;padding:26px 25px;border:1px solid #dbe5ef;border-radius:22px;background:#fff;box-shadow:0 10px 28px rgba(6,42,87,.04);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.mostashar-benefit-grid article:hover{transform:translateY(-3px);border-color:#a8c5e7;box-shadow:0 18px 40px rgba(6,42,87,.08)}
+.benefit-icon{width:52px;height:52px;display:grid;place-items:center;margin-bottom:16px;border:1px solid #a9c7f4;border-radius:17px;background:#eef5ff;color:#0f69dc;font-size:24px;font-weight:950}
+.benefit-icon.gold{border-color:#f0d49a;background:#fff8e7;color:#c8921d}
+.mostashar-benefit-grid h3{margin:0 0 8px;color:#071a35;font-size:21px;line-height:1.35;font-weight:950}
+.mostashar-benefit-grid p{margin:0;color:#687a93;line-height:1.8;font-size:14px;font-weight:600}
+
+.mostashar-difference{padding:56px 0 12px}
+.mostashar-marketing-head.compact{margin-bottom:30px}
+.mostashar-compare-wrap{max-width:1120px;margin:0 auto;overflow:auto;border:1px solid #d8e3ef;border-radius:25px;background:#fff;box-shadow:0 22px 58px rgba(6,42,87,.08);outline:none}
+.mostashar-compare-wrap:focus-visible{box-shadow:0 0 0 4px rgba(15,105,220,.18),0 22px 58px rgba(6,42,87,.08)}
+.mostashar-compare-table{width:100%;border-collapse:separate;border-spacing:0;min-width:680px;text-align:right;color:#071a35}
+.mostashar-compare-table th,.mostashar-compare-table td{padding:17px 24px;border-bottom:1px solid #e5ebf2;font-size:14px}
+.mostashar-compare-table thead th{background:#f5f8fc;font-size:15px;font-weight:950;color:#223755}
+.mostashar-compare-table thead th:first-child{width:50%}
+.mostashar-compare-table thead .ours{background:#eaf4ff;color:#0f5dc0;text-align:center}
+.mostashar-compare-table thead th:nth-child(2),.mostashar-compare-table tbody td{text-align:center}
+.mostashar-compare-table tbody th{font-weight:850;background:#fff}
+.mostashar-compare-table tbody tr:last-child th,.mostashar-compare-table tbody tr:last-child td{border-bottom:0}
+.mostashar-compare-table tbody td:last-child{background:#f4f9ff}
+.compare-yes,.compare-no,.compare-neutral{width:27px;height:27px;display:inline-grid;place-items:center;border-radius:9px;font-size:18px;font-weight:950}
+.compare-yes{background:#dff8ee;color:#13a56a}.compare-no{background:#ffe9ec;color:#ed5464}.compare-neutral{background:#eef3f8;color:#8393a8;font-size:12px}
+.mostashar-compare-cta{text-align:center;margin-top:28px}
+.mostashar-compare-cta a{display:inline-flex;align-items:center;justify-content:center;min-width:250px;min-height:52px;padding:13px 25px;border-radius:999px;background:linear-gradient(135deg,#0d68d9,#0e8fbc);color:#fff;text-decoration:none;font-weight:950;box-shadow:0 14px 30px rgba(13,104,217,.22);transition:.18s}
+.mostashar-compare-cta a:hover{transform:translateY(-2px);box-shadow:0 18px 38px rgba(13,104,217,.28)}
+
+@media(max-width:1024px){
+  .mostashar-benefits,.mostashar-difference{width:94%;margin-top:58px}
+  .mostashar-benefits{padding:40px 28px}
+  .mostashar-benefit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:680px){
+  .mostashar-benefits,.mostashar-difference{width:94%;margin-top:42px}
+  .mostashar-benefits{padding:30px 16px;border-radius:22px}
+  .mostashar-marketing-head{margin-bottom:26px}
+  .mostashar-marketing-head h2{font-size:34px;letter-spacing:-.6px}
+  .mostashar-marketing-head p{font-size:14px;line-height:1.75}
+  .mostashar-benefit-grid{grid-template-columns:1fr;gap:12px}
+  .mostashar-benefit-grid article{min-height:0;padding:20px;border-radius:18px}
+  .benefit-icon{width:46px;height:46px;border-radius:15px;font-size:21px;margin-bottom:12px}
+  .mostashar-benefit-grid h3{font-size:19px}
+  .mostashar-compare-table th,.mostashar-compare-table td{padding:14px 13px;font-size:13px}
+  .mostashar-compare-cta a{width:100%;min-width:0}
+}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+/* V96 final homepage flow */
+.section-anchor{display:block;position:relative;top:-92px;visibility:hidden;pointer-events:none}
+body.home-v95 .mostashar-benefits+ .ai-showcase{margin-top:64px}
+body.home-v95 .ai-showcase+ .wael-journey{margin-top:64px}
+body.home-v95 .wael-journey+ .section-anchor+ .mostashar-difference{margin-top:64px}
+body.home-v95 .homepage-reels,body.home-v95 .homepage-honors{scroll-margin-top:100px}
+body.home-v95 .grade-community{scroll-margin-top:100px;margin-top:72px}
+body.home-v95 .whatsapp-support-section{margin-top:34px}
+body.home-v95 .wael-cta{margin-top:34px}
+@media(max-width:680px){
+  .section-anchor{top:-72px}
+  body.home-v95 .mostashar-benefits+ .ai-showcase,
+  body.home-v95 .ai-showcase+ .wael-journey,
+  body.home-v95 .wael-journey+ .section-anchor+ .mostashar-difference{margin-top:42px}
+  body.home-v95 .grade-community{margin-top:48px}
+}
+
+/* V96 responsive interaction safety — 2026-08-18
+   Keeps every action reachable without invisible menu layers or floating-button overlap. */
+body.home-v95 .mobile-menu:not([open]) > .mobile-menu-panel{display:none!important}
+body.home-v95 .mobile-menu>summary{
+  background:rgba(255,255,255,.12)!important;
+  border-color:rgba(255,255,255,.28)!important;
+  color:#fff!important;
+}
+body.home-v95 .mobile-menu>summary:hover,
+body.home-v95 .mobile-menu[open]>summary{background:rgba(255,255,255,.20)!important}
+
+/* The old decorative wheel/book stack was explicitly removed from the approved homepage. */
+body.home-v95 .v95-books,
+body.home-v95 .v95-london-eye{display:none!important}
+
+/* Desktop: keep the two quick floating actions inside the side gutters as compact icons. */
+@media (min-width:1200px){
+  body.home-v95 .home-ai-fab,
+  body.home-v95 .whatsapp-float{
+    width:48px!important;height:48px!important;padding:0!important;border-radius:50%!important;
+    display:grid!important;place-items:center!important;gap:0!important;
+  }
+  body.home-v95 .home-ai-fab b,
+  body.home-v95 .whatsapp-float>span:last-child{display:none!important}
+  body.home-v95 .home-ai-fab span{font-size:20px!important}
+  body.home-v95 .whatsapp-float .wa-icon{width:40px;height:40px}
+}
+/* Tablet / mobile already expose support and Smart Tutor inside the page; hiding the
+   floating duplicates prevents them from covering cards, controls or text. */
+@media (max-width:1199px){
+  body.home-v95 .home-ai-fab,
+  body.home-v95 .whatsapp-float{display:none!important}
+}
+
+/* RTL wide comparison table remains horizontally scrollable inside its own frame,
+   without increasing the Android document width. */
+@media (max-width:680px){
+  body.home-v95 .mostashar-compare-wrap{width:100%;max-width:100%;direction:ltr}
+  body.home-v95 .mostashar-compare-table{direction:rtl}
 }
