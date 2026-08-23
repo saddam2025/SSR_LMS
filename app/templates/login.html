@@ -1,10 +1,9 @@
 {% extends 'base.html' %}{% block title %}تسجيل الدخول | المستشار{% endblock %}{% block content %}
 <div class="form-card"><div class="login-brand">
     <div class="brand-mark">م</div>
-    <span class="eyebrow">مرحبًا بعودتك</span><h2>تسجيل الدخول إلى المستشار</h2><p class="muted">كطالب أون لاين أو سنتر، سجّل الدخول برقم الهاتف وكلمة المرور للوصول إلى الكورسات والاختبارات.</p></div>{% if error %}<div class="error">{{error}}</div>{% endif %}<form method="post">
+    <span class="eyebrow">مرحبًا بعودتك</span><h2>تسجيل الدخول إلى المستشار</h2><p class="muted">سجّل الدخول بالبريد الإلكتروني أو رقم الهاتف وكلمة المرور للوصول إلى الكورسات والاختبارات.</p></div>{% if error %}<div class="error">{{error}}</div>{% endif %}<form method="post">
         <input type="hidden" name="csrf" value="{{csrf}}">
-        <div class="field"><label for="login-email">رقم الهاتف</label>
-    <input type="text" id="login-email" name="email" required autocomplete="username" inputmode="tel" pattern="01[0-9]{9}" title="رقم هاتف مصري صحيح، مثال: 01xxxxxxxxx" placeholder="01xxxxxxxxx"><small class="muted">يمكن لحسابات الإدارة أيضًا استخدام البريد الإلكتروني.</small></div><div class="field"><label for="login-password">كلمة المرور</label><input type="password" id="login-password" name="password" required autocomplete="current-password" placeholder="••••••••"></div><button class="btn" style="width:100%" type="submit">دخول آمن إلى حسابي</button></form><p class="muted" style="margin-top:12px"><a href="/forgot-password">نسيت كلمة المرور؟</a></p>
-    <div style="text-align:center;margin-top:12px"><a href="/otp-login">الدخول برمز OTP على الهاتف</a></div>
+        <div class="field"><label for="login-email">البريد الإلكتروني أو رقم الهاتف</label>
+    <input type="text" id="login-email" name="email" required autocomplete="username" placeholder="example@email.com أو 01xxxxxxxxx"></div><div class="field"><label for="login-password">كلمة المرور</label><input type="password" id="login-password" name="password" required autocomplete="current-password" placeholder="••••••••"></div><button class="btn" style="width:100%" type="submit">دخول آمن إلى حسابي</button></form>
     </div>
 {% endblock %}
