@@ -2,6 +2,7 @@ import os
 from sqlalchemy.orm import Session
 from fastapi import Request
 from ..cloudflare_stream import stream_edge_ready, stream_embed_path
+from ..media_providers import UnsupportedMediaProviderError, detect_video_provider
 from ..models import (
     User, Lesson, MediaAsset, DiscussionPost, LessonCheckpoint, CheckpointAttempt,
     LessonFlashcard, Homework, OfflineLessonPolicy, LessonVideoProfile,
@@ -33,8 +34,19 @@ def render_lesson_page(request: Request, db: Session, lesson: Lesson, u: User, *
     offline_provider_ready = bool((os.getenv("OFFLINE_DRM_LICENSE_URL") or os.getenv("DRM_LICENSE_SERVER_URL") or "").strip())
     video_profile = db.query(LessonVideoProfile).filter_by(lesson_id=lesson.id).first()
     stream_player_path = None
+    youtube_embed_url = None
+    bunny_embed_url = None
     if video_profile and video_profile.provider == "cloudflare":
         stream_player_path = stream_embed_path(lesson.video_url, lesson.id, u.id)
+    elif video_profile and video_profile.provider in ("youtube", "bunny"):
+        try:
+            detection = detect_video_provider(lesson.video_url)
+        except UnsupportedMediaProviderError:
+            detection = None
+        if detection and detection.provider == "youtube" == video_profile.provider:
+            youtube_embed_url = detection.embed_url
+        elif detection and detection.provider == "bunny" == video_profile.provider:
+            bunny_embed_url = detection.embed_url
     if is_production is None:
         is_production = os.getenv("ENV") == "production"
     return render_template("lesson.html", template_context(
@@ -46,4 +58,5 @@ def render_lesson_page(request: Request, db: Session, lesson: Lesson, u: User, *
         offline_policy=offline_policy, offline_provider_ready=offline_provider_ready, video_profile=video_profile,
         direct_video_proxy_enabled=direct_video_proxy_enabled(is_production=is_production),
         stream_player_path=stream_player_path, stream_edge_ready=stream_edge_ready(),
+        youtube_embed_url=youtube_embed_url, bunny_embed_url=bunny_embed_url,
     ))

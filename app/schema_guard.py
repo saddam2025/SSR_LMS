@@ -20,6 +20,9 @@ PERFORMANCE_INDEXES = (
     ("ix_attendance_user_date", "student_attendance", "user_id, attendance_date"),
     ("ix_communication_delivery_status_id", "communication_deliveries", "status, id"),
     ("ix_homeworks_course_due", "homeworks", "course_id, due_at"),
+    # V-media-providers: documents are now linked by provider (r2/google_drive/s3/local)
+    # as well as by lesson, so lookups filtering on provider stay index-backed.
+    ("ix_media_assets_lesson_provider", "media_assets", "lesson_id, provider"),
 )
 
 

@@ -11,7 +11,7 @@
   <a href="#lesson-details"><b>✎ بيانات الدرس</b><small>العنوان والشرح والنشر</small></a>
   <a href="#drip-control"><b>🔓 الفتح التدريجي</b><small>Drip + فتح يدوي</small></a>
   <a href="#video-upload"><b>▶ رفع المحاضرة</b><small>استكمال تلقائي + Stream</small></a>
-  <a href="#lesson-media"><b>⬆ المرفقات</b><small>PDF / صور / فيديو</small></a>
+  <a href="#lesson-media"><b>⬆ المرفقات</b><small>PDF / صور / فيديو / روابط خارجية</small></a>
   <a href="/admin/course/{{course.id}}#interactive-learning"><b>⚡ تفاعلي</b><small>أسئلة توقف وFlash Cards</small></a>
 </div>
 
@@ -22,7 +22,7 @@
       <input type="hidden" name="csrf" value="{{csrf}}">
       <div class="field"><label>عنوان الدرس</label><input name="title" value="{{lesson.title}}" maxlength="180" required></div>
       <div class="field"><label>الشرح / المحتوى النصي</label><textarea name="body" rows="12">{{lesson.body}}</textarea></div>
-      <div class="field" id="lesson-video"><label>رابط فيديو خارجي HTTPS (اختياري)</label><input type="url" name="video_url" value="{{lesson.video_url}}" placeholder="https://..."><small class="muted">استخدم أداة رفع المحاضرة بالأسفل للرفع المباشر؛ هذا الحقل مخصص للروابط الموجودة مسبقًا.</small></div>
+      <div class="field" id="lesson-video"><label>رابط الفيديو (YouTube / Cloudflare Stream / Bunny / خارجي)</label><input type="url" name="video_url" value="{{lesson.video_url}}" placeholder="https://..."><small class="muted">يتم اكتشاف المزود تلقائيًا من الرابط (YouTube، Cloudflare Stream، Bunny). لاستخدام Vimeo/Mux أو رابط مخصص آخر، احفظ الرابط هنا ثم اختر المزود يدويًا في "إعدادات الفيديو" أسفل الصفحة. استخدم أداة رفع المحاضرة بالأسفل للرفع المباشر إلى Cloudflare Stream.</small></div>
       <div class="grid">
         <div class="field"><label>ترتيب الدرس</label><input type="number" name="order_index" min="1" max="10000" value="{{lesson.order_index}}" required></div>
         <label class="option-row"><input type="checkbox" name="published" value="on" {% if lesson.published %}checked{% endif %}><span>منشور ومتاح للطلاب</span></label>
@@ -77,7 +77,7 @@
 </section>
 
 <section id="video-upload" class="section-block stream-upload-panel">
-  <div class="section-title"><div><span class="eyebrow">V57 • RESUMABLE LECTURE UPLOAD</span><h2>رفع المحاضرة مباشرة إلى Cloudflare Stream</h2><p class="muted">الرفع يتم من جهازك إلى Stream على أجزاء، ويستكمل من آخر جزء عند انقطاع الإنترنت أو إعادة المحاولة.</p></div><span class="badge {{'success' if stream_upload_configured else 'warn'}}">{{'جاهز' if stream_upload_configured else 'يحتاج إعداد'}}</span></div>
+  <div class="section-title"><div><span class="eyebrow">V57 • RESUMABLE LECTURE UPLOAD</span><h2>رفع المحاضرة مباشرة إلى Cloudflare Stream</h2><p class="muted">الرفع يتم من جهازك إلى Stream على أجزاء، ويستكمل من آخر جزء عند انقطاع الإنترنت أو إعادة المحاولة. لفيديوهات YouTube أو Bunny الموجودة بالفعل، الصق الرابط في حقل "رابط الفيديو" أعلاه بدلًا من الرفع هنا.</p></div><span class="badge {{'success' if stream_upload_configured else 'warn'}}">{{'جاهز' if stream_upload_configured else 'يحتاج إعداد'}}</span></div>
   <div class="card upload-drop-card">
     {% if stream_upload_configured %}
     <form data-stream-upload-form data-lesson-id="{{lesson.id}}">
@@ -99,12 +99,12 @@
 </section>
 
 <section id="video-control" class="section-block video-control-panel">
-  <div class="section-title"><div><span class="eyebrow">VIDEO CONTROL CENTER</span><h2>إعدادات الفيديو والبث</h2><p class="muted">بيانات تشغيل وإدارة للفيديو بدون تغيير رابط الدرس الأساسي.</p></div>{% if video_profile %}<span class="badge {{'success' if video_profile.processing_status=='ready' else 'warn'}}">{{video_profile.processing_status|upper}}</span>{% endif %}</div>
+  <div class="section-title"><div><span class="eyebrow">VIDEO CONTROL CENTER</span><h2>إعدادات الفيديو والبث</h2><p class="muted">المزود يُكتشف تلقائيًا عند حفظ رابط الفيديو أعلاه لـ YouTube وCloudflare Stream وBunny. استخدم هذا القسم لتعديل يدوي أو لمزودات أخرى (Vimeo/Mux/Custom).</p></div>{% if video_profile %}<span class="badge {{'success' if video_profile.processing_status=='ready' else 'warn'}}">{{video_profile.processing_status|upper}}</span>{% endif %}</div>
   <div class="card">
     <form method="post" action="/admin/lesson/{{lesson.id}}/video-profile">
       <input type="hidden" name="csrf" value="{{csrf}}">
       <div class="video-settings-grid">
-        <div class="field"><label>مزود الفيديو</label><select name="provider"><option value="external" {% if not video_profile or video_profile.provider=='external' %}selected{% endif %}>External / رابط خارجي</option><option value="cloudflare" {% if video_profile and video_profile.provider=='cloudflare' %}selected{% endif %}>Cloudflare Stream</option><option value="bunny" {% if video_profile and video_profile.provider=='bunny' %}selected{% endif %}>Bunny Stream</option><option value="vimeo" {% if video_profile and video_profile.provider=='vimeo' %}selected{% endif %}>Vimeo</option><option value="mux" {% if video_profile and video_profile.provider=='mux' %}selected{% endif %}>Mux</option><option value="custom" {% if video_profile and video_profile.provider=='custom' %}selected{% endif %}>Custom</option></select></div>
+        <div class="field"><label>مزود الفيديو</label><select name="provider"><option value="external" {% if not video_profile or video_profile.provider=='external' %}selected{% endif %}>External / رابط خارجي</option><option value="cloudflare" {% if video_profile and video_profile.provider=='cloudflare' %}selected{% endif %}>Cloudflare Stream</option><option value="bunny" {% if video_profile and video_profile.provider=='bunny' %}selected{% endif %}>Bunny Stream</option><option value="youtube" {% if video_profile and video_profile.provider=='youtube' %}selected{% endif %}>YouTube</option><option value="vimeo" {% if video_profile and video_profile.provider=='vimeo' %}selected{% endif %}>Vimeo</option><option value="mux" {% if video_profile and video_profile.provider=='mux' %}selected{% endif %}>Mux</option><option value="custom" {% if video_profile and video_profile.provider=='custom' %}selected{% endif %}>Custom</option></select><small class="muted">اختيار Cloudflare/Bunny/YouTube هنا يتطلب أن يطابق رابط الدرس فعليًا هذا المزود.</small></div>
         <div class="field"><label>نوع البث</label><select name="stream_type"><option value="auto" {% if not video_profile or video_profile.stream_type=='auto' %}selected{% endif %}>Auto</option><option value="hls" {% if video_profile and video_profile.stream_type=='hls' %}selected{% endif %}>HLS</option><option value="dash" {% if video_profile and video_profile.stream_type=='dash' %}selected{% endif %}>MPEG-DASH</option><option value="mp4" {% if video_profile and video_profile.stream_type=='mp4' %}selected{% endif %}>MP4</option></select></div>
         <div class="field"><label>الحماية / DRM</label><select name="drm_mode"><option value="none" {% if not video_profile or video_profile.drm_mode=='none' %}selected{% endif %}>بدون DRM</option><option value="signed" {% if video_profile and video_profile.drm_mode=='signed' %}selected{% endif %}>Signed URL / Token</option><option value="widevine" {% if video_profile and video_profile.drm_mode=='widevine' %}selected{% endif %}>Widevine</option><option value="fairplay" {% if video_profile and video_profile.drm_mode=='fairplay' %}selected{% endif %}>FairPlay</option><option value="playready" {% if video_profile and video_profile.drm_mode=='playready' %}selected{% endif %}>PlayReady</option><option value="multi-drm" {% if video_profile and video_profile.drm_mode=='multi-drm' %}selected{% endif %}>Multi-DRM</option></select></div>
         <div class="field"><label>حالة التجهيز</label><select name="processing_status"><option value="draft" {% if video_profile and video_profile.processing_status=='draft' %}selected{% endif %}>Draft</option><option value="uploading" {% if video_profile and video_profile.processing_status=='uploading' %}selected{% endif %}>Uploading</option><option value="processing" {% if video_profile and video_profile.processing_status=='processing' %}selected{% endif %}>Processing</option><option value="ready" {% if not video_profile or video_profile.processing_status=='ready' %}selected{% endif %}>Ready</option><option value="blocked" {% if video_profile and video_profile.processing_status=='blocked' %}selected{% endif %}>Blocked</option></select></div>
@@ -129,6 +129,13 @@
       <button class="btn" type="submit">رفع وإرفاق بالدرس</button>
     </form>
   </div>
-  {% if assets %}<div class="card"><div class="list">{% for a in assets %}<div class="list-item"><div><b>{{a.original_name}}</b><div class="muted">{{a.mime_type}} • {{(a.size_bytes/1024/1024)|round(2)}} MB</div></div><div class="inline-actions"><a class="btn secondary small" href="/protected/media/{{a.id}}" target="_blank" rel="noopener">معاينة محمية</a><form method="post" action="/admin/media/{{a.id}}/delete"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn ghost small">حذف</button></form></div></div>{% endfor %}</div></div>{% else %}<div class="empty">لا توجد مرفقات لهذا الدرس حتى الآن.</div>{% endif %}
+  <div class="card upload-drop-card">
+    <form method="post" action="/admin/course/{{course.id}}/media/link">
+      <input type="hidden" name="csrf" value="{{csrf}}"><input type="hidden" name="lesson_id" value="{{lesson.id}}">
+      <div class="field"><label>أو أضف رابط مستند خارجي (R2 / Google Drive)</label><input type="url" name="document_url" required placeholder="https://drive.google.com/file/d/.../view"><small class="muted">للـ Google Drive: يجب أن يكون الملف "متاحًا لأي شخص لديه الرابط"، وإلا لن يفتح للطالب. لن يقوم الخادم بمحاولة تجاوز صلاحيات الملف.</small></div>
+      <button class="btn secondary" type="submit">ربط المستند بالدرس</button>
+    </form>
+  </div>
+  {% if assets %}<div class="card"><div class="list">{% for a in assets %}<div class="list-item"><div><b>{{a.original_name}}</b><div class="muted">{{a.mime_type}}{% if a.provider in ('google_drive','r2') %} • رابط خارجي ({{'Google Drive' if a.provider=='google_drive' else 'R2'}}){% else %} • {{(a.size_bytes/1024/1024)|round(2)}} MB{% endif %}</div></div><div class="inline-actions"><a class="btn secondary small" href="/protected/media/{{a.id}}" target="_blank" rel="noopener">معاينة محمية</a><form method="post" action="/admin/media/{{a.id}}/delete"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn ghost small">حذف</button></form></div></div>{% endfor %}</div></div>{% else %}<div class="empty">لا توجد مرفقات لهذا الدرس حتى الآن.</div>{% endif %}
 </section>
 {% endblock %}

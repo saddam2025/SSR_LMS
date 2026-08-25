@@ -3,6 +3,7 @@
 These routes keep the public HTTP contract stable while removing content-management
 responsibilities from app.main. Student playback remains separate from this router.
 """
+import logging
 import os
 from datetime import datetime
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
@@ -25,6 +26,10 @@ from ..cloudflare_stream import extract_stream_uid
 from ..cloudflare_upload import stream_upload_ready, max_upload_bytes as stream_max_upload_bytes
 from ..storage import s3_ready
 from ..services.courses import validated_video_url
+from ..media_providers import (
+    UnsupportedMediaProviderError, build_external_document_key, detect_document_provider,
+    detect_video_provider,
+)
 
 router = APIRouter()
 
@@ -39,6 +44,31 @@ def render_template(name: str, context: dict, status_code: int = 200):
     if request is None:
         raise RuntimeError("Template context must include request")
     return Jinja2Templates.TemplateResponse(templates, request=request, name=name, context=context, status_code=status_code)
+
+
+def _sync_auto_detected_video_provider(db: Session, lesson: Lesson, video_url: str) -> None:
+    """Auto-populate LessonVideoProfile.provider for hosts we can recognize.
+
+    Only touches the `provider` field (and drm_mode for Cloudflare, matching the
+    existing manual-selection behavior). Admins can still fine-tune stream_type,
+    thumbnail, duration, etc. via the dedicated video-profile form. URLs from
+    providers we don't auto-detect (Vimeo/Mux/Custom/plain external links) leave
+    any existing profile untouched, so nothing is silently reclassified.
+    """
+    if not video_url:
+        return
+    try:
+        detection = detect_video_provider(video_url)
+    except UnsupportedMediaProviderError:
+        return
+    profile = db.query(LessonVideoProfile).filter_by(lesson_id=lesson.id).first()
+    if not profile:
+        profile = LessonVideoProfile(lesson_id=lesson.id)
+        db.add(profile)
+    if profile.provider != detection.provider:
+        profile.provider = detection.provider
+        if detection.provider == "cloudflare":
+            profile.drm_mode = "signed"
 
 @router.post("/admin/courses")
 def create_course(request: Request, title: str = Form(...), grade: str = Form(...), price: float = Form(0), csrf: str = Form(...), db: Session = Depends(get_db)):
@@ -142,6 +172,7 @@ def update_lesson(lesson_id: int, request: Request, title: str = Form(...), body
     lesson.video_url = next_video_url
     lesson.order_index = max(1, min(int(order_index), 10000))
     lesson.published = wants_publish
+    _sync_auto_detected_video_provider(db, lesson, next_video_url)
     db.commit()
     audit(db, request, u, "lesson_updated", {"lesson_id": lesson.id, "course_id": course.id, "order_index": lesson.order_index, "published": lesson.published})
     return RedirectResponse(f"/admin/lesson/{lesson.id}/edit", 303)
@@ -197,14 +228,22 @@ def update_lesson_video_profile(lesson_id: int, request: Request, provider: str 
     stream_type = stream_type.strip().lower()[:20]
     drm_mode = drm_mode.strip().lower()[:30]
     processing_status = processing_status.strip().lower()[:20]
-    if provider not in {"external","cloudflare","bunny","vimeo","mux","custom"}: raise HTTPException(400, "مزود الفيديو غير صالح")
+    if provider not in {"external","cloudflare","bunny","youtube","vimeo","mux","custom"}: raise HTTPException(400, "مزود الفيديو غير صالح")
     if stream_type not in {"auto","hls","dash","mp4"}: raise HTTPException(400, "نوع البث غير صالح")
     if drm_mode not in {"none","signed","widevine","fairplay","playready","multi-drm"}: raise HTTPException(400, "إعداد DRM غير صالح")
     if processing_status not in {"draft","uploading","processing","ready","blocked"}: raise HTTPException(400, "حالة الفيديو غير صالحة")
-    if provider == "cloudflare":
-        if not extract_stream_uid(lesson.video_url):
-            raise HTTPException(400, "رابط الدرس يجب أن يكون رابط Cloudflare Stream صالحًا قبل اختيار المزود")
-        drm_mode = "signed"
+    # Providers we can auto-detect must actually match the lesson's video_url;
+    # this generalizes the old Cloudflare-only guard to also cover YouTube/Bunny
+    # so an admin can't mislabel e.g. a YouTube link as "bunny" by mistake.
+    if provider in {"cloudflare", "bunny", "youtube"}:
+        try:
+            detection = detect_video_provider(lesson.video_url)
+        except UnsupportedMediaProviderError:
+            detection = None
+        if not detection or detection.provider != provider:
+            raise HTTPException(400, f"رابط الدرس لا يطابق مزود {provider} المحدد")
+        if provider == "cloudflare":
+            drm_mode = "signed"
     clean_thumb = validated_video_url(thumbnail_url) if thumbnail_url.strip() else ""
     total_duration = max(0, min(int(duration_minutes), 9999) * 60 + min(max(int(duration_seconds), 0), 59))
     profile = db.query(LessonVideoProfile).filter_by(lesson_id=lesson.id).first()
@@ -216,6 +255,41 @@ def update_lesson_video_profile(lesson_id: int, request: Request, provider: str 
     db.commit()
     audit(db, request, u, "lesson_video_profile_updated", {"lesson_id": lesson.id, "provider": provider, "stream_type": stream_type, "drm_mode": drm_mode, "status": processing_status})
     return RedirectResponse(f"/admin/lesson/{lesson.id}/edit#video-control", 303)
+
+@router.post("/admin/course/{course_id}/media/link")
+def add_media_link(course_id: int, request: Request, lesson_id: int = Form(...), document_url: str = Form(...), csrf: str = Form(...), db: Session = Depends(get_db)):
+    """Attach a document by URL (R2 or Google Drive) instead of uploading a file.
+
+    Reuses the existing MediaAsset table/columns — no schema change. Section 7
+    of the spec says not to bypass Drive permissions: this only records the
+    link; it never fetches the file server-side, so an unshared/private Drive
+    file simply fails to load for the student later, with no credential
+    bypass attempted here.
+    """
+    u = require_role(request, db, "super_admin", "admin", "content_manager")
+    if not check_csrf(request.session, csrf): raise HTTPException(403)
+    course = db.get(Course, course_id)
+    lesson = db.get(Lesson, lesson_id)
+    if not course or not lesson or lesson.course_id != course.id: raise HTTPException(404)
+    if not can_manage_course(u.role, teacher_id=course.teacher_id, user_id=u.id): raise HTTPException(403)
+    try:
+        detection = detect_document_provider(document_url)
+    except UnsupportedMediaProviderError as exc:
+        raise HTTPException(400, str(exc))
+    storage_key = build_external_document_key(detection.identifier, lesson.id)
+    if db.query(MediaAsset).filter_by(storage_key=storage_key).first():
+        raise HTTPException(400, "هذا الملف مضاف بالفعل لهذا الدرس")
+    display_name = detection.identifier if detection.provider == "google_drive" else (detection.normalized_url.rsplit("/", 1)[-1] or "document")
+    asset = MediaAsset(
+        lesson_id=lesson.id, owner_id=u.id,
+        original_name=display_name[:255],
+        storage_key=storage_key,
+        mime_type="application/vnd.google-apps.document" if detection.provider == "google_drive" else "application/pdf",
+        size_bytes=0, provider=detection.provider,
+    )
+    db.add(asset); db.commit()
+    audit(db, request, u, "media_link_added", {"lesson_id": lesson.id, "provider": detection.provider})
+    return RedirectResponse(f"/admin/lesson/{lesson.id}/edit#lesson-media", 303)
 
 @router.post("/admin/lesson/{lesson_id}/move")
 def move_lesson(lesson_id: int, request: Request, direction: str = Form(...), csrf: str = Form(...), db: Session = Depends(get_db)):
@@ -278,10 +352,12 @@ def add_lesson(course_id: int, request: Request, title: str = Form(...), body: s
     order = db.query(Lesson).filter(Lesson.course_id == course_id).count() + 1
     clean_title = title.strip()[:180]
     if not clean_title: raise HTTPException(400, "عنوان الدرس مطلوب")
-    lesson = Lesson(course_id=course_id, title=clean_title, body=body.strip(), video_url=validated_video_url(video_url), order_index=order, published=False)
+    clean_video_url = validated_video_url(video_url)
+    lesson = Lesson(course_id=course_id, title=clean_title, body=body.strip(), video_url=clean_video_url, order_index=order, published=False)
     try:
         db.add(lesson)
         db.flush()
+        _sync_auto_detected_video_provider(db, lesson, clean_video_url)
         audit(db, request, u, "add_lesson", {"lesson_id": lesson.id, "course_id": course_id}, commit=False)
         db.commit()
     except HTTPException:
