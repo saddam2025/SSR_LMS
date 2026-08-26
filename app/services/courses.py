@@ -3,8 +3,6 @@ import os
 from urllib.parse import urlparse
 from fastapi import HTTPException
 
-from ..media_providers import UnsupportedMediaProviderError, detect_video_provider
-
 
 def _is_production() -> bool:
     return os.getenv("ENV") == "production"
@@ -30,18 +28,6 @@ def validated_video_url(value: str) -> str:
     parsed = urlparse(value)
     if parsed.scheme != "https" or not parsed.hostname:
         raise HTTPException(400, "رابط الفيديو يجب أن يكون HTTPS صالحًا")
-
-    # YouTube / Cloudflare Stream / Bunny are auto-detected and already strictly
-    # host-validated by media_providers.detect_video_provider (exact host or
-    # proper subdomain match — no lookalike-domain bypass). Accept those
-    # regardless of VIDEO_ALLOWED_HOSTS, which exists only to gate manual
-    # providers like Vimeo/Mux/custom external hosts.
-    try:
-        detect_video_provider(value)
-        return value
-    except UnsupportedMediaProviderError:
-        pass
-
     allowed = {h.strip().lower() for h in os.getenv("VIDEO_ALLOWED_HOSTS", "").split(",") if h.strip()}
     host = parsed.hostname.lower()
     if _is_production() and not allowed:
