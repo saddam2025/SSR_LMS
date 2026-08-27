@@ -5,8 +5,7 @@
   <div class="watermark dynamic-watermark" aria-hidden="true"><strong>{{watermark}}</strong><small>Ragab Seddik LMS • <span data-wm-time></span></small></div>
   {% if lesson.video_url %}
   <div class="video-box protected-media">
-    <div class="inline-actions" style="justify-content:space-between"><strong>المشغل المحمي</strong><div class="inline-actions"><span class="badge success">Secure Session</span>{% if video_profile %}<span class="badge {{'success' if video_profile.processing_status=='ready' else 'warn'}}">{{video_profile.provider|upper}} • {{video_profile.processing_status|upper}}</span>{% if video_profile.drm_mode!='none' %}<span class="badge">{{video_profile.drm_mode|upper}}</span>{% endif %}{% endif %}</div></div>
-    <p class="security-note">الفيديو داخل جلسة الحساب والعلامة المائية مرتبطة بالمستخدم والجلسة. نقاط التوقف التفاعلية تظهر أسفل المشغل.</p>
+    <div class="inline-actions" style="justify-content:space-between"><strong>المشغل المحمي</strong><span class="badge success">جلسة آمنة</span></div>
     <div class="media-frame-wrap" data-video-watermark-zone>
       <div class="video-user-watermark" data-video-watermark aria-hidden="true"><strong>{{watermark}}</strong><small>المستشار • <span data-video-wm-time></span></small></div>
       {% set video_lower = lesson.video_url|lower %}

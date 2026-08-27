@@ -26,11 +26,24 @@
   tiled.className = 'watermark-grid';
   tiled.setAttribute('aria-hidden', 'true');
 
+  function stripBackground(el) {
+    if (!el) return;
+    el.style.setProperty('background', 'none', 'important');
+    el.style.setProperty('background-color', 'transparent', 'important');
+    el.style.setProperty('background-image', 'none', 'important');
+    el.style.setProperty('box-shadow', 'none', 'important');
+    el.style.setProperty('border', 'none', 'important');
+    el.style.setProperty('backdrop-filter', 'none', 'important');
+    el.style.setProperty('color', '#fff', 'important');
+    el.style.setProperty('text-shadow', '0 1px 3px rgba(0,0,0,0.85), 0 0 6px rgba(0,0,0,0.6)', 'important');
+  }
+
   function rebuildTiles() {
     tiled.replaceChildren();
     for (let i = 0; i < 18; i += 1) {
       const item = document.createElement('span');
       item.textContent = serverStamp;
+      stripBackground(item);
       tiled.appendChild(item);
     }
   }
@@ -45,11 +58,13 @@
     if (strong.textContent !== serverStamp || !strong.textContent.includes(identityName)) {
       strong.textContent = serverStamp;
     }
+    stripBackground(strong);
     let small = node.querySelector('small');
     if (!small) {
       small = document.createElement('small');
       node.appendChild(small);
     }
+    stripBackground(small);
     let time = small.querySelector('[data-wm-time], [data-video-wm-time]');
     if (!time) {
       small.textContent = prefix + ' • ';
@@ -61,43 +76,58 @@
 
   function unhide(node) {
     if (!node) return;
-    node.hidden = false;
-    node.removeAttribute('hidden');
-    ['display', 'visibility', 'opacity', 'filter', 'clip-path'].forEach((name) => node.style.removeProperty(name));
-    node.setAttribute('aria-hidden', 'true');
+    if (node.hidden) node.hidden = false;
+    if (node.hasAttribute('hidden')) node.removeAttribute('hidden');
+    ['display', 'visibility', 'opacity', 'filter', 'clip-path'].forEach((name) => {
+      if (node.style.getPropertyValue(name)) node.style.removeProperty(name);
+    });
+    if (node.getAttribute('aria-hidden') !== 'true') node.setAttribute('aria-hidden', 'true');
   }
+
+  const observer = new MutationObserver(ensureProtection);
 
   let repairing = false;
   function ensureProtection() {
     if (repairing) return;
     repairing = true;
+    observer.disconnect();
     try {
       if (!root.isConnected && originalParent?.isConnected) {
         if (originalNext?.parentNode === originalParent) originalParent.insertBefore(root, originalNext);
         else originalParent.appendChild(root);
       }
-      root.dataset.watermark = serverStamp;
-      root.dataset.watermarkName = identityName;
-      root.dataset.watermarkIntegrity = 'persistent-v40';
+      if (root.dataset.watermark !== serverStamp) root.dataset.watermark = serverStamp;
+      if (root.dataset.watermarkName !== identityName) root.dataset.watermarkName = identityName;
+      if (root.dataset.watermarkIntegrity !== 'persistent-v40') root.dataset.watermarkIntegrity = 'persistent-v40';
       unhide(root);
 
       if (!tiled.isConnected || tiled.parentNode !== root) root.prepend(tiled);
       const tiles = Array.from(tiled.querySelectorAll('span'));
       if (tiles.length !== 18 || tiles.some((item) => item.textContent !== serverStamp)) rebuildTiles();
       unhide(tiled);
+      stripBackground(tiled);
 
       if (dynamicWatermark) {
         if (dynamicWatermark.parentNode !== root) root.appendChild(dynamicWatermark);
         restoreMarkup(dynamicWatermark, 'Ragab Seddik LMS');
         unhide(dynamicWatermark);
+        stripBackground(dynamicWatermark);
       }
       if (videoZone && videoWatermark) {
         if (videoWatermark.parentNode !== videoZone) videoZone.prepend(videoWatermark);
         restoreMarkup(videoWatermark, 'المستشار');
         unhide(videoWatermark);
+        stripBackground(videoWatermark);
       }
     } finally {
       repairing = false;
+      observer.observe(document.documentElement, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['style', 'class', 'hidden', 'data-watermark', 'data-watermark-name']
+      });
     }
   }
 
@@ -129,15 +159,6 @@
   moveVideoWatermark();
   window.setInterval(() => { ensureProtection(); moveWatermark(); }, 9000);
   window.setInterval(() => { ensureProtection(); moveVideoWatermark(); }, 7000);
-
-  const observer = new MutationObserver(ensureProtection);
-  observer.observe(document.documentElement, {
-    subtree: true,
-    childList: true,
-    characterData: true,
-    attributes: true,
-    attributeFilter: ['style', 'class', 'hidden', 'data-watermark', 'data-watermark-name']
-  });
 
   // Browser controls are deterrence only; native capture protection and a DRM
   // provider remain the enforceable layers on supported devices.
