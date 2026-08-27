@@ -1,13 +1,11 @@
 {% extends 'base.html' %}{% block title %}{{lesson.title}} | المستشار{% endblock %}{% block content %}
 <div class="page-head"><div><span class="eyebrow">درس محمي وتفاعلي</span><h1>{{lesson.title}}</h1><p class="muted">شاهد، اختبر فهمك أثناء الدرس، واسأل مساعد المستشار من نفس محتوى الدرس.</p></div><a class="btn ghost" href="/course/{{lesson.course_id}}">العودة للكورس</a></div>
 
-<div class="protected-shell lesson-experience" data-protected-content data-watermark="{{watermark}}" data-watermark-name="{{watermark_name}}" data-watermark-integrity="persistent-v40">
-  <div class="watermark dynamic-watermark" aria-hidden="true"><strong>{{watermark}}</strong><small>Ragab Seddik LMS • <span data-wm-time></span></small></div>
+<div class="lesson-experience">
   {% if lesson.video_url %}
-  <div class="video-box protected-media">
-    <div class="inline-actions" style="justify-content:space-between"><strong>المشغل المحمي</strong><span class="badge success">جلسة آمنة</span></div>
-    <div class="media-frame-wrap" data-video-watermark-zone>
-      <div class="video-user-watermark" data-video-watermark aria-hidden="true"><strong>{{watermark}}</strong><small>المستشار • <span data-video-wm-time></span></small></div>
+  <div class="video-box">
+    <div class="media-frame-wrap">
+      <div class="video-user-watermark" aria-hidden="true">{{watermark}}</div>
       {% set video_lower = lesson.video_url|lower %}
       {% if video_profile and video_profile.provider == 'cloudflare' and stream_player_path %}
         <iframe src="{{stream_player_path}}" width="100%" height="500" allow="encrypted-media; autoplay; picture-in-picture" referrerpolicy="strict-origin" title="مشغل Cloudflare Stream المحمي"></iframe>
@@ -15,7 +13,6 @@
         <div class="empty">إعداد Cloudflare Stream غير مكتمل. تحقّق من رابط الفيديو وسر CF_EDGE_SIGNING_SECRET.</div>
       {% elif video_profile and video_profile.provider == 'youtube' and youtube_embed_url %}
         <iframe src="{{youtube_embed_url}}" width="100%" height="500" allow="accelerometer; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" title="مشغل YouTube" allowfullscreen></iframe>
-        <p class="security-note">الفيديو مضمّن عبر مشغل YouTube الرسمي. الطالب يبقى داخل صفحة الدرس ولا يتم تحويله إلى موقع YouTube.</p>
       {% elif video_profile and video_profile.provider == 'youtube' %}
         <div class="empty">تعذر تجهيز رابط تضمين YouTube. تحقّق من رابط الفيديو في بيانات الدرس.</div>
       {% elif video_profile and video_profile.provider == 'bunny' and bunny_embed_url %}
@@ -30,11 +27,9 @@
         <iframe src="{{lesson.video_url}}" width="100%" height="500" allow="encrypted-media; autoplay" referrerpolicy="no-referrer" title="مشغل الفيديو المحمي"></iframe>
       {% endif %}
     </div>
-    {% if video_profile and video_profile.duration_seconds %}<div class="video-meta-line"><span>المدة: {{video_profile.duration_seconds//60}}:{{'%02d'|format(video_profile.duration_seconds%60)}}</span><span>البث: {{video_profile.stream_type|upper}}</span></div>{% endif %}
   </div>
   {% endif %}
-  <div class="card lesson-body protected-document">{{lesson.body}}</div>
-  <div class="capture-overlay" aria-hidden="true">المحتوى محمي — التصوير أو إعادة النشر غير مصرح به</div>
+  <div class="card lesson-body">{{lesson.body}}</div>
 </div>
 
 {% if checkpoints %}
@@ -73,4 +68,4 @@
 <div class="card" style="margin-top:16px"><div class="inline-actions" style="justify-content:space-between"><div><b>حالة الوصول</b><div class="muted">رمز المحتوى مؤقت ومرتبط بالجلسة.</div></div><a class="btn secondary small" href="/protected/lesson/{{lesson.id}}?token={{media_token}}">تحقق من الجلسة</a></div></div>
 <div class="section-title"><div><span class="eyebrow">ملفات الدرس</span><h2>المحتوى المحمي</h2></div></div><div class="grid">{% for a in assets %}<div class="card"><h3>{{a.original_name}}</h3><p class="muted">{{a.mime_type}} • {% if a.provider == 'google_drive' %}Google Drive{% elif a.provider == 'r2' %}R2{% endif %} وصول محمي</p><a class="btn secondary" target="_blank" rel="noopener" href="/protected/media/{{a.id}}">فتح المحتوى</a></div>{% else %}<div class="empty">لا توجد ملفات إضافية لهذا الدرس.</div>{% endfor %}</div>
 <section id="discussion" class="card" style="margin-top:24px"><span class="eyebrow">Q&A</span><h2>أسئلة ومناقشة الدرس</h2><form method="post" action="/lesson/{{lesson.id}}/discussion"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><textarea name="body" required maxlength="2000" placeholder="اكتب سؤالك أو ملاحظتك..."></textarea></div><button class="btn">نشر</button></form><div class="list" style="margin-top:16px">{% for p in discussion_posts %}<div class="list-item"><div><b>{{discussion_users[p.user_id].name if p.user_id in discussion_users else 'مستخدم'}}</b><div>{{p.body}}</div><small class="muted">{{p.created_at.strftime('%Y-%m-%d %H:%M')}}</small></div>{% if user.role in ['super_admin','admin','content_manager'] %}<form method="post" action="/admin/discussion/{{p.id}}/toggle"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn ghost small">إخفاء</button></form>{% endif %}</div>{% else %}<div class="empty">ابدأ أول سؤال في هذا الدرس.</div>{% endfor %}</div></section>
-<script src="/static/protected-content.js" defer></script><script src="/static/lesson-experience.js" defer></script>{% endblock %}
+<script src="/static/lesson-experience.js" defer></script>{% endblock %}

@@ -160,28 +160,4 @@
   window.setInterval(() => { ensureProtection(); moveWatermark(); }, 9000);
   window.setInterval(() => { ensureProtection(); moveVideoWatermark(); }, 7000);
 
-  // Browser controls are deterrence only; native capture protection and a DRM
-  // provider remain the enforceable layers on supported devices.
-  root.addEventListener('contextmenu', (event) => event.preventDefault());
-  root.addEventListener('dragstart', (event) => event.preventDefault());
-  root.addEventListener('copy', (event) => event.preventDefault());
-  root.addEventListener('cut', (event) => event.preventDefault());
-
-  document.addEventListener('keydown', (event) => {
-    const key = String(event.key || '').toLowerCase();
-    const blocked =
-      event.key === 'PrintScreen' ||
-      ((event.ctrlKey || event.metaKey) && ['s', 'p', 'u'].includes(key)) ||
-      (event.ctrlKey && event.shiftKey && ['i', 'j', 'c'].includes(key));
-    if (!blocked) return;
-    event.preventDefault();
-    document.body.classList.add('capture-warning');
-    window.setTimeout(() => document.body.classList.remove('capture-warning'), 1200);
-  }, true);
-
-  document.addEventListener('visibilitychange', () => {
-    root.classList.toggle('content-obscured', document.hidden);
-  });
-  window.addEventListener('blur', () => root.classList.add('content-obscured'));
-  window.addEventListener('focus', () => root.classList.remove('content-obscured'));
 })();

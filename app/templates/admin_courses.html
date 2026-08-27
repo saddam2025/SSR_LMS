@@ -8,7 +8,7 @@
     <div class="table-wrap"><table><tr><th>الكورس</th><th>الصف</th><th>التصنيف</th><th>السعر</th><th>الحالة</th><th>الإدارة</th></tr>
       {% for c in courses %}<tr><td><b>{{c.title}}</b></td><td>{{c.grade}}</td><td>
         <form class="inline-actions" method="post" action="/admin/course/{{c.id}}/category"><input type="hidden" name="csrf" value="{{csrf}}"><select name="category_id"><option value="0">بدون تصنيف</option>{% for cat in categories %}<option value="{{cat.id}}" {% if category_by_course.get(c.id) and category_by_course.get(c.id).id == cat.id %}selected{% endif %}>{{cat.name}}</option>{% endfor %}</select><button class="btn ghost small">حفظ</button></form>
-      </td><td>{{'%.0f'|format(c.price)}} ج.م</td><td><span class="badge {{'success' if c.published else 'warn'}}">{{'منشور' if c.published else 'مسودة'}}</span></td><td><a class="btn secondary small" href="/admin/course/{{c.id}}">فتح</a></td></tr>{% else %}<tr><td colspan="6">لا توجد كورسات.</td></tr>{% endfor %}
+      </td><td>{{'%.0f'|format(c.price)}} ج.م</td><td><span class="badge {{'success' if c.published else 'warn'}}">{{'منشور' if c.published else 'مسودة'}}</span></td><td><div class="inline-actions"><a class="btn secondary small" href="/admin/course/{{c.id}}">فتح</a><form method="post" action="/admin/courses/{{c.id}}/toggle"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn {{'ghost' if c.published else 'gold'}} small">{{'إلغاء النشر' if c.published else 'نشر'}}</button></form></div></td></tr>{% else %}<tr><td colspan="6">لا توجد كورسات.</td></tr>{% endfor %}
     </table></div>
   </section>
   <aside class="admin-panel"><div class="admin-panel-head"><div><small>QUICK CREATE</small><h2>كورس جديد</h2></div></div>
