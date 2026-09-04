@@ -22,52 +22,44 @@ router = APIRouter()
 
 
 @router.get("/admin/users", response_class=HTMLResponse)
-def admin_users(request: Request, page: int = 1, q: str = "", parent_q: str = "", student_q: str = "", db: Session = Depends(get_db)):
+def admin_users(request: Request, db: Session = Depends(get_db)):
     require_role(request, db, "admin")
-    page_size = 100
-    page = max(1, int(page or 1))
-    q = " ".join((q or "").strip().split())[:120]
-    parent_q = " ".join((parent_q or "").strip().split())[:120]
-    student_q = " ".join((student_q or "").strip().split())[:120]
-
-    user_query = db.query(User)
-    if q:
-        like = f"%{q}%"
-        user_query = user_query.filter(or_(User.name.ilike(like), User.email.ilike(like), User.role.ilike(like)))
-    filtered_total = user_query.count()
-    pages = max(1, (filtered_total + page_size - 1) // page_size)
-    page = min(page, pages)
-    users = user_query.order_by(User.id.desc()).offset((page - 1) * page_size).limit(page_size).all()
-
-    def lookup(role: str, value: str):
-        query = db.query(User).filter(User.role == role, User.is_active == True)
-        if value:
-            like = f"%{value}%"
-            query = query.filter(or_(User.name.ilike(like), User.email.ilike(like)))
-        return query.order_by(User.id.desc()).limit(50).all()
-
-    parents = lookup("parent", parent_q)
-    students = lookup("student", student_q)
-    return render_template("admin_users.html", ctx(
-        request, db, users=users, parents=parents, students=students,
-        page=page, pages=pages, page_size=page_size, q=q, filtered_total=filtered_total,
-        parent_q=parent_q, student_q=student_q,
-    ))
+    users = db.query(User).order_by(User.id.desc()).all()
+    parents = [x for x in users if x.role == "parent"]
+    students = [x for x in users if x.role == "student"]
+    links = db.query(ParentStudent).all()
+    return render_template("admin_users.html", ctx(request, db, users=users, parents=parents, students=students, parent_links=links))
 
 
 @router.post("/admin/users")
-def admin_user_create(request: Request, name: str = Form(...), email: str = Form(...), role: str = Form("student"), password: str = Form(...), csrf: str = Form(...), db: Session = Depends(get_db)):
+def admin_user_create(request: Request, name: str = Form(...), email: str = Form(""), phone: str = Form(""), role: str = Form("student"), password: str = Form(...), csrf: str = Form(...), db: Session = Depends(get_db)):
     u = require_role(request, db, "super_admin", "admin")
     if not check_csrf(request.session, csrf): raise HTTPException(403)
     role = role.strip().lower()
     if role not in ALLOWED_ROLES or role not in {"student", "parent", "content_manager", "support", "accounting", "admin", "super_admin"}:
         raise HTTPException(400, "دور المستخدم غير مسموح")
-    email = email.strip().lower()
-    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email): raise HTTPException(400, "البريد الإلكتروني غير صالح")
-    if db.query(User).filter(func.lower(User.email) == email).first(): raise HTTPException(409, "البريد مستخدم بالفعل")
     validate_admin_password(password)
-    target = User(name=name.strip()[:120], email=email, password_hash=hash_password(password), role=role, is_active=True)
-    db.add(target); db.commit(); audit(db, request, u, "user_created", {"target_user": target.id, "role": role})
+    if role == "student":
+        # Students are identified by phone number, not email. A unique
+        # placeholder email is generated automatically to satisfy the
+        # database's email column (still unique/required), matching what
+        # public self-registration already does.
+        ph = re.sub(r"\D", "", phone or "")
+        if ph.startswith("20") and len(ph) == 12: ph = "0" + ph[2:]
+        if len(ph) == 10 and ph.startswith("1"): ph = "0" + ph
+        if not re.fullmatch(r"01[0-9]{9}", ph): raise HTTPException(400, "رقم الهاتف غير صالح. مثال: 01xxxxxxxxx")
+        if db.query(StudentProfile).filter(StudentProfile.phone == ph).first(): raise HTTPException(409, "رقم الهاتف مستخدم بالفعل")
+        placeholder_email = f"{ph}@mostashar.local"
+        target = User(name=name.strip()[:120], email=placeholder_email, password_hash=hash_password(password), role=role, is_active=True)
+        db.add(target); db.flush()
+        db.add(StudentProfile(user_id=target.id, phone=ph))
+    else:
+        email_norm = email.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email_norm): raise HTTPException(400, "البريد الإلكتروني غير صالح")
+        if db.query(User).filter(func.lower(User.email) == email_norm).first(): raise HTTPException(409, "البريد مستخدم بالفعل")
+        target = User(name=name.strip()[:120], email=email_norm, password_hash=hash_password(password), role=role, is_active=True)
+        db.add(target)
+    db.commit(); audit(db, request, u, "user_created", {"target_user": target.id, "role": role})
     return RedirectResponse("/admin/users", 303)
 
 
@@ -136,11 +128,11 @@ def admin_students(request: Request, page: int = 1, q: str = "", db: Session = D
 
 
 @router.post("/admin/students/import")
-def admin_students_import(request: Request, file: UploadFile = File(...), default_password: str = Form(...), group_id: int = Form(0), course_id: int = Form(0), csrf: str = Form(...), db: Session = Depends(get_db)):
+async def admin_students_import(request: Request, file: UploadFile = File(...), default_password: str = Form(...), group_id: int = Form(0), course_id: int = Form(0), csrf: str = Form(...), db: Session = Depends(get_db)):
     u = require_role(request, db, "super_admin", "admin")
     if not check_csrf(request.session, csrf): raise HTTPException(403)
     validate_admin_password(default_password, default=True)
-    raw = file.file.read(5 * 1024 * 1024 + 1)
+    raw = await file.read()
     if len(raw) > 5 * 1024 * 1024: raise HTTPException(413, "الملف أكبر من 5MB")
     rows = import_student_rows(raw, file.filename or "")
     created = updated = skipped = 0; errors = []
@@ -256,7 +248,7 @@ def admin_student_360(student_id: int, request: Request, db: Session = Depends(g
     quiz_avg = round(sum(float(a.score or 0) for a in submitted_attempts) / len(submitted_attempts), 1) if submitted_attempts else 0
     metrics = {"courses": len(enrollments), "completed_lessons": completed, "watched_minutes": watched_seconds // 60,
                "quiz_avg": quiz_avg, "open_tickets": sum(1 for t in tickets if t.status not in {"resolved", "closed"})}
-    analytics = next(iter(student_performance_rows(db, student_ids=[student.id])), None)
+    analytics = next((r for r in student_performance_rows(db) if r["student"].id == student.id), None)
     return render_template("admin_student_360.html", ctx(request, db, student=student, profile=profile, enrollments=enrollments,
         courses=courses, progress=progress, attempts=attempts, homework=homework, subscriptions=subscriptions,
         devices=devices, sessions=sessions, tickets=tickets, metrics=metrics, analytics=analytics))

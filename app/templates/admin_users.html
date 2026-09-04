@@ -4,7 +4,26 @@
 {% block admin_content %}
 <div class="admin-page-head"><div><span>الطلاب والحسابات</span><h1>إدارة الحسابات</h1><p>أنشئ الحسابات وأدر كلمات المرور بدون تحميل آلاف السجلات دفعة واحدة.</p></div></div>
 <div class="admin-grid-2">
-<section class="admin-panel"><div class="admin-panel-head"><div><small>NEW USER</small><h2>حساب جديد</h2></div></div><form method="post" action="/admin/users"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>الاسم</label><input name="name" required maxlength="120"></div><div class="field"><label>البريد</label><input type="email" name="email" required></div><div class="field"><label>الدور</label><select name="role"><option value="student">طالب</option><option value="parent">ولي أمر</option><option value="content_manager">مشرف محتوى</option><option value="support">دعم فني</option><option value="accounting">حسابات</option><option value="admin">مدير المنصة</option><option value="super_admin">المدير العام</option></select></div><div class="field"><label>كلمة مرور مؤقتة قوية</label><input type="password" name="password" minlength="12" required></div><button class="btn">إنشاء الحساب</button></form></section>
+<section class="admin-panel"><div class="admin-panel-head"><div><small>NEW USER</small><h2>حساب جديد</h2></div></div><form method="post" action="/admin/users" id="new-user-form"><input type="hidden" name="csrf" value="{{csrf}}"><div class="field"><label>الاسم</label><input name="name" required maxlength="120"></div><div class="field" id="new-user-phone-field"><label>رقم الهاتف</label><input type="text" name="phone" id="new-user-phone" inputmode="tel" pattern="01[0-9]{9}" title="رقم هاتف مصري صحيح، مثال: 01xxxxxxxxx" placeholder="01xxxxxxxxx" required></div><div class="field" id="new-user-email-field" style="display:none"><label>البريد</label><input type="email" name="email" id="new-user-email" placeholder="example@email.com"></div><div class="field"><label>الدور</label><select name="role" id="new-user-role"><option value="student">طالب</option><option value="parent">ولي أمر</option><option value="content_manager">مشرف محتوى</option><option value="support">دعم فني</option><option value="accounting">حسابات</option><option value="admin">مدير المنصة</option><option value="super_admin">المدير العام</option></select></div><div class="field"><label>كلمة مرور مؤقتة قوية</label><input type="password" name="password" minlength="12" required></div><button class="btn">إنشاء الحساب</button></form>
+<script>
+(function(){
+  var roleSelect = document.getElementById('new-user-role');
+  var phoneField = document.getElementById('new-user-phone-field');
+  var emailField = document.getElementById('new-user-email-field');
+  var phoneInput = document.getElementById('new-user-phone');
+  var emailInput = document.getElementById('new-user-email');
+  function sync(){
+    var isStudent = roleSelect.value === 'student';
+    phoneField.style.display = isStudent ? '' : 'none';
+    emailField.style.display = isStudent ? 'none' : '';
+    phoneInput.required = isStudent;
+    emailInput.required = !isStudent;
+  }
+  roleSelect.addEventListener('change', sync);
+  sync();
+})();
+</script>
+</section>
 <section class="admin-panel"><div class="admin-panel-head"><div><small>USERS</small><h2>الحسابات الحالية</h2></div><span class="admin-count">{{filtered_total}}</span></div>
 <form method="get" action="/admin/users" class="inline-actions" style="margin-bottom:14px"><input name="q" value="{{q}}" placeholder="ابحث بالاسم أو البريد أو الدور"><button class="btn secondary small">بحث</button>{% if q %}<a class="btn ghost small" href="/admin/users">مسح</a>{% endif %}</form>
 <div class="list">{% for u in users %}<div class="admin-user-row"><div><b>{{u.name}}</b><div class="muted">{{u.email}} — {{role_labels.get(u.role, u.role)}} — {{'نشط' if u.is_active else 'موقوف'}}</div></div><div class="admin-user-actions"><form method="post" action="/admin/users/{{u.id}}/reset-password" class="inline-actions"><input type="hidden" name="csrf" value="{{csrf}}"><input type="password" name="new_password" minlength="12" placeholder="كلمة مرور جديدة" required><button class="btn secondary small">تغيير</button></form>{% if u.id != user.id %}<form method="post" action="/admin/users/{{u.id}}/reset-mfa"><input type="hidden" name="csrf" value="{{csrf}}"><button class="btn ghost small">مسح إعداد MFA القديم</button></form>{% endif %}</div></div>{% else %}<div class="empty">لا توجد حسابات.</div>{% endfor %}</div>
